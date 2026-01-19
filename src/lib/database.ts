@@ -130,7 +130,7 @@ export async function initializeDatabase(): Promise<void> {
       'NIST_AI_RMF', 'ISO_27001_27002', 'ISO_23894', 'LGPD', 'CSA_AI', 'OWASP_LLM',
       'CSA_CCM', 'CIS_BENCHMARKS', 'NIST_SSDF', 'OWASP_API', 'OWASP_ASVS', 'SLSA'
     ];
-    await supabase.from('assessment_meta').insert({
+    const { error } = await supabase.from('assessment_meta').insert({
       id: 'current',
       name: 'TrustLayer - Avaliação de Governança de Segurança',
       enabled_frameworks: allFrameworkIds,
@@ -138,6 +138,9 @@ export async function initializeDatabase(): Promise<void> {
       version: '2.0.0',
       user_id: userId
     });
+    if (error) {
+      console.warn('Skipping assessment_meta bootstrap:', error);
+    }
   }
 }
 

@@ -20,12 +20,16 @@ import { ExecutiveDashboard } from '@/components/ExecutiveDashboard';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { getAllCustomQuestions, getDisabledQuestions, getEnabledFrameworks, getSelectedFrameworks, setSelectedFrameworks, getAllCustomFrameworks } from '@/lib/database';
 import { frameworks as defaultFrameworks, Framework, getQuestionFrameworkIds } from '@/lib/frameworks';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canEditAssessments } from '@/lib/roles';
 import { LayoutDashboard } from 'lucide-react';
 
 export default function Dashboard() {
   const { answers, isLoading } = useAnswersStore();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
   const [persona, setPersona] = useState<PersonaType>('executive');
   
   const [allActiveQuestions, setAllActiveQuestions] = useState<ActiveQuestion[]>([]);
@@ -149,6 +153,7 @@ export default function Dashboard() {
 
   // Handle framework selection change
   const handleFrameworkSelectionChange = async (frameworkIds: string[]) => {
+    if (!canEdit) return;
     setSelectedFrameworkIds(frameworkIds);
     try {
       await setSelectedFrameworks(frameworkIds);

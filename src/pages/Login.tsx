@@ -10,16 +10,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Shield, LogIn, AlertTriangle, Clock, Info } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
 
-// Demo credentials for testing/showcase purposes
-const DEMO_EMAIL = 'demo@aiassess.app';
-const DEMO_PASSWORD = 'Demo@2025!';
 
 export default function Login() {
   const { t } = useTranslation();
-  const [email, setEmail] = useState(DEMO_EMAIL);
-  const [password, setPassword] = useState(DEMO_PASSWORD);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   
@@ -94,19 +90,15 @@ export default function Login() {
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
-            {/* Demo credentials info banner */}
             <Alert className="border-primary/30 bg-primary/5">
               <Info className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
               <AlertDescription className="ml-2">
                 <div className="flex flex-col gap-1">
-                  <span className="text-xs sm:text-sm font-medium text-primary">Conta Demo para Testes</span>
-                  <div className="flex flex-col xs:flex-row flex-wrap gap-1 sm:gap-2 text-xs text-muted-foreground">
-                    <Badge variant="secondary" className="font-mono text-[10px] sm:text-xs w-fit">
-                      {DEMO_EMAIL}
-                    </Badge>
-                    <Badge variant="secondary" className="font-mono text-[10px] sm:text-xs w-fit">
-                      {DEMO_PASSWORD}
-                    </Badge>
+                  <span className="text-xs sm:text-sm font-medium text-primary">
+                    Acesso restrito
+                  </span>
+                  <div className="text-xs sm:text-sm text-muted-foreground">
+                    Solicite seu acesso ao administrador da plataforma.
                   </div>
                 </div>
               </AlertDescription>
@@ -203,10 +195,7 @@ export default function Login() {
             </Button>
             
             <p className="text-sm text-muted-foreground text-center">
-              {t('auth.noAccount')}{' '}
-              <Link to="/signup" className="text-primary hover:underline font-medium">
-                {t('auth.createAccount')}
-              </Link>
+              Contas sao provisionadas pelo administrador.
             </p>
           </CardFooter>
         </form>

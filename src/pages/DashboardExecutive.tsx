@@ -1,8 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
 import { ExecutiveDashboard } from '@/components/ExecutiveDashboard';
-import MaturityTrendChart from '@/components/MaturityTrendChart';
-import { PeriodComparisonCard } from '@/components/dashboard';
 import { DomainSwitcher } from '@/components/DomainSwitcher';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { cn } from '@/lib/utils';
@@ -58,15 +56,6 @@ export default function DashboardExecutive() {
         securityDomainId={currentDomainInfo?.domainId || 'AI_SECURITY'}
         answers={answers}
       />
-
-      {/* Period Comparison */}
-      <PeriodComparisonCard 
-        securityDomainId={currentDomainInfo?.domainId}
-        className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500" 
-      />
-
-      {/* Maturity Trend Chart */}
-      <MaturityTrendChart className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-100" />
     </div>
   );
 }

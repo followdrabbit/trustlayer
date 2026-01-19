@@ -186,12 +186,22 @@ export default function Profile() {
             <p className="text-muted-foreground">{t('profile.managePersonalInfo', 'Gerencie suas informações pessoais')}</p>
           </div>
         </div>
-        <Button variant="outline" asChild>
-          <Link to="/settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            {t('profile.goToSettings', 'Ir para Configurações')}
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          {profile.role === "admin" && (
+            <Button variant="outline" asChild>
+              <Link to="/admin" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Administracao
+              </Link>
+            </Button>
+          )}
+          <Button variant="outline" asChild>
+            <Link to="/settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              {t('profile.goToSettings', 'Ir para Configuracoes')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -357,3 +367,4 @@ export default function Profile() {
     </div>
   );
 }
+

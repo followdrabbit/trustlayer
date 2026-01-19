@@ -32,25 +32,6 @@ const SETTINGS_SEARCH_KEYS = [
   "settingsSearch.noResults",
   "settingsSearch.tryTerms",
 
-  // Content Tab Items
-  "settingsSearch.domains.title",
-  "settingsSearch.domains.description",
-  "settingsSearch.domains.section",
-  "settingsSearch.frameworks.title",
-  "settingsSearch.frameworks.description",
-  "settingsSearch.frameworks.section",
-  "settingsSearch.questions.title",
-  "settingsSearch.questions.description",
-  "settingsSearch.questions.section",
-
-  // Assessment Tab Items
-  "settingsSearch.assessmentInfo.title",
-  "settingsSearch.assessmentInfo.description",
-  "settingsSearch.assessmentInfo.section",
-  "settingsSearch.frameworkSelection.title",
-  "settingsSearch.frameworkSelection.description",
-  "settingsSearch.frameworkSelection.section",
-
   // Preferences Tab Items
   "settingsSearch.appearance.title",
   "settingsSearch.appearance.description",
@@ -68,28 +49,8 @@ const SETTINGS_SEARCH_KEYS = [
   "settingsSearch.notifications.description",
   "settingsSearch.notifications.section",
 
-  // System Tab Items
-  "settingsSearch.export.title",
-  "settingsSearch.export.description",
-  "settingsSearch.export.section",
-  "settingsSearch.demoData.title",
-  "settingsSearch.demoData.description",
-  "settingsSearch.demoData.section",
-  "settingsSearch.clearAnswers.title",
-  "settingsSearch.clearAnswers.description",
-  "settingsSearch.clearAnswers.section",
-  "settingsSearch.restoreDefaults.title",
-  "settingsSearch.restoreDefaults.description",
-  "settingsSearch.restoreDefaults.section",
-  "settingsSearch.about.title",
-  "settingsSearch.about.description",
-  "settingsSearch.about.section",
-
   // Tab labels used in TAB_CONFIG
-  "settings.contentTab",
-  "settings.assessmentTab",
   "settings.preferencesTab",
-  "settings.systemTab",
 ];
 
 describe("SettingsSearch i18n Keys", () => {
@@ -218,27 +179,6 @@ describe("SettingsSearch i18n Keys", () => {
   });
 
   describe("Key Categories Coverage", () => {
-    it("should have all content tab items", () => {
-      const contentKeys = SETTINGS_SEARCH_KEYS.filter(
-        (key) =>
-          key.includes("domains") ||
-          key.includes("frameworks") ||
-          key.includes("questions")
-      ).filter((key) => key.startsWith("settingsSearch."));
-
-      // Should have title, description, section for each item
-      expect(contentKeys.length).toBe(9); // 3 items × 3 keys each
-    });
-
-    it("should have all assessment tab items", () => {
-      const assessmentKeys = SETTINGS_SEARCH_KEYS.filter(
-        (key) =>
-          key.includes("assessmentInfo") || key.includes("frameworkSelection")
-      );
-
-      expect(assessmentKeys.length).toBe(6); // 2 items × 3 keys each
-    });
-
     it("should have all preferences tab items", () => {
       const preferencesKeys = SETTINGS_SEARCH_KEYS.filter(
         (key) =>
@@ -252,25 +192,12 @@ describe("SettingsSearch i18n Keys", () => {
       expect(preferencesKeys.length).toBe(15); // 5 items × 3 keys each
     });
 
-    it("should have all system tab items", () => {
-      const systemKeys = SETTINGS_SEARCH_KEYS.filter(
-        (key) =>
-          key.includes("export") ||
-          key.includes("demoData") ||
-          key.includes("clearAnswers") ||
-          key.includes("restoreDefaults") ||
-          key.includes("about")
-      );
-
-      expect(systemKeys.length).toBe(15); // 5 items × 3 keys each
-    });
-
     it("should have all tab labels", () => {
       const tabKeys = SETTINGS_SEARCH_KEYS.filter((key) =>
         key.startsWith("settings.") && key.endsWith("Tab")
       );
 
-      expect(tabKeys.length).toBe(4); // content, assessment, preferences, system
+      expect(tabKeys.length).toBe(1); // preferences
     });
   });
 

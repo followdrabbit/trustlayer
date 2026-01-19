@@ -268,10 +268,6 @@ export default function Home() {
             {t('home.getStarted')}
             <ArrowRight className="h-4 w-4" />
           </Button>
-          <Button size="default" variant="outline" onClick={() => navigate('/assessment')} className="gap-2 w-full xs:w-auto">
-            <Sparkles className="h-4 w-4" />
-            {t('home.tryDemo')}
-          </Button>
         </div>
       </section>
     </div>

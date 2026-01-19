@@ -525,7 +525,7 @@ export function AIAssistantChat() {
               </Button>
             )}
           </div>
-          {!sttSupported && (
+          {!sttSupported && !sttError && (
             <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 sm:mt-2">
               {t('aiAssistant.sttNotSupported', 'Voice input not supported in this browser')}
             </p>

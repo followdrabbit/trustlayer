@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+import { isInlineSecretAllowed } from '@/lib/secretInput';
 import { STTProviderType } from '@/lib/sttProviders';
 
 export interface VoiceSettings {
@@ -24,6 +26,21 @@ interface VoiceSettingsContextValue {
   updateSettings: (newSettings: Partial<VoiceSettings>) => void;
   refetch: () => Promise<void>;
 }
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type VoiceSettingsRow = Pick<
+  ProfileRow,
+  | 'voice_language'
+  | 'voice_rate'
+  | 'voice_pitch'
+  | 'voice_volume'
+  | 'voice_name'
+  | 'voice_auto_speak'
+  | 'stt_provider'
+  | 'stt_api_key_encrypted'
+  | 'stt_model'
+  | 'stt_endpoint_url'
+>;
 
 const defaultSettings: VoiceSettings = {
   // TTS defaults
@@ -60,9 +77,26 @@ export function VoiceSettingsProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      const inlineSecretsAllowed = isInlineSecretAllowed();
+      const selectFields = [
+        'voice_language',
+        'voice_rate',
+        'voice_pitch',
+        'voice_volume',
+        'voice_name',
+        'voice_auto_speak',
+        'stt_provider',
+        'stt_model',
+        'stt_endpoint_url',
+      ];
+
+      if (inlineSecretsAllowed) {
+        selectFields.push('stt_api_key_encrypted');
+      }
+
       const { data, error } = await supabase
         .from('profiles')
-        .select('voice_language, voice_rate, voice_pitch, voice_volume, voice_name, voice_auto_speak, stt_provider, stt_api_key_encrypted, stt_model, stt_endpoint_url')
+        .select(selectFields.join(', '))
         .eq('user_id', user.id)
         .single();
 
@@ -75,17 +109,18 @@ export function VoiceSettingsProvider({ children }: { children: ReactNode }) {
       }
 
       if (data) {
+        const row = data as VoiceSettingsRow;
         setSettings({
-          voice_language: data.voice_language || 'pt-BR',
-          voice_rate: Number(data.voice_rate) || 1.0,
-          voice_pitch: Number(data.voice_pitch) || 1.0,
-          voice_volume: Number(data.voice_volume) || 1.0,
-          voice_name: data.voice_name || null,
-          voice_auto_speak: data.voice_auto_speak ?? false,
-          stt_provider: ((data as any).stt_provider as STTProviderType) || 'web-speech-api',
-          stt_api_key: (data as any).stt_api_key_encrypted || null,
-          stt_model: (data as any).stt_model || 'whisper-1',
-          stt_endpoint_url: (data as any).stt_endpoint_url || null,
+          voice_language: row.voice_language || 'pt-BR',
+          voice_rate: Number(row.voice_rate) || 1.0,
+          voice_pitch: Number(row.voice_pitch) || 1.0,
+          voice_volume: Number(row.voice_volume) || 1.0,
+          voice_name: row.voice_name || null,
+          voice_auto_speak: row.voice_auto_speak ?? false,
+          stt_provider: (row.stt_provider as STTProviderType) || 'web-speech-api',
+          stt_api_key: inlineSecretsAllowed ? row.stt_api_key_encrypted || null : null,
+          stt_model: row.stt_model || 'whisper-1',
+          stt_endpoint_url: row.stt_endpoint_url || null,
         });
       }
     } catch (err) {

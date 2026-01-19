@@ -41,17 +41,6 @@ export function useAuth() {
     };
   }, []);
 
-  const signUp = useCallback(async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { data, error };
-  }, []);
-
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -70,7 +59,6 @@ export function useAuth() {
     session: authState.session,
     loading: authState.loading,
     isAuthenticated: !!authState.session,
-    signUp,
     signIn,
     signOut,
   };

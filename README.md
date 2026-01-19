@@ -19,7 +19,7 @@ Uma plataforma completa de governança de segurança multi-domínio para **AI Se
 
 <!-- Backend & Infra -->
 [![Supabase](https://img.shields.io/badge/Supabase-Self--Hosted-3ecf8e?logo=supabase&logoColor=white)](https://supabase.com/)
-[![Edge Functions](https://img.shields.io/badge/Edge%20Functions-5-3ecf8e?logo=deno&logoColor=white)](https://supabase.com/docs/guides/functions)
+[![Edge Functions](https://img.shields.io/badge/Edge%20Functions-3-3ecf8e?logo=deno&logoColor=white)](https://supabase.com/docs/guides/functions)
 
 <!-- License & Community -->
 [![License](https://img.shields.io/badge/license-MIT-blue?logo=opensourceinitiative&logoColor=white)](LICENSE)
@@ -97,6 +97,7 @@ Esta ferramenta permite que organizações avaliem sua postura de segurança em 
 - **Executivo**: Visão estratégica para CISO e liderança com KPIs consolidados
 - **GRC**: Governança, Riscos e Compliance com foco em cobertura de frameworks
 - **Especialista**: Detalhes técnicos para arquitetos e engenheiros de segurança
+- **Layouts Modulares (Admin)**: Catalogo de widgets e layouts configuraveis por perfil
 
 #### 📈 Análise de Tendências
 - **Histórico de Maturidade**: Snapshots automáticos diários para acompanhamento temporal
@@ -124,6 +125,7 @@ Esta ferramenta permite que organizações avaliem sua postura de segurança em 
   - OpenAI Whisper (alta precisão, requer API key)
   - Endpoint customizado (para modelos próprios)
 - Suporte a transcrição de arquivos de áudio
+- Se o provedor exigir API key e ela nao estiver configurada (ou inline secrets desabilitados), o STT fica desativado.
 
 **Perfil de Voz (Speaker Verification):**
 - **Cadastro biométrico**: Grave frases para treinar o sistema a reconhecer sua voz
@@ -251,7 +253,16 @@ cd trustlayer
 npm install
 ```
 
-### 3. Execute o servidor de desenvolvimento
+### 3. Bootstrap do admin e catálogo
+
+Veja `docs/SETUP.md` para:
+- criar o usuário administrador
+  - provisionar usuarios locais (sem signup)
+- importar o catálogo inicial (domínios, frameworks, perguntas)
+  - painel administrativo em /admin (nao aparece na sidebar)
+  - revisar o preview/dry-run do XLSX antes de importar
+
+### 4. Execute o servidor de desenvolvimento
 
 ```bash
 npm run dev
@@ -270,6 +281,9 @@ A aplicação estará disponível em `http://localhost:5173`
 | `npm run preview` | Visualiza o build de produção localmente |
 | `npm run lint` | Executa o linter (ESLint) |
 | `npm run test` | Executa os testes |
+| `npm run provision:admin` | Provisiona o usuario administrador inicial |
+| `npm run provision:user` | Provisiona usuarios locais (sem signup) |
+| `USER_ROLE=admin|manager|analyst|viewer|user` | Define role ao provisionar usuarios (user = legado) |
 
 ## 📁 Estrutura do Projeto
 
@@ -281,7 +295,7 @@ src/
 │   ├── settings/        # Componentes de configuração
 │   ├── ai-assistant/    # Componentes do assistente IA
 │   └── auth/            # Componentes de autenticação
-├── data/                # Dados estáticos (frameworks, questões, taxonomia)
+├── data/                # (legacy) catálogo migrado para o banco de dados
 ├── hooks/               # Custom React hooks
 ├── i18n/                # Arquivos de internacionalização
 │   └── locales/         # Traduções (pt-BR, en-US, es-ES)
@@ -307,8 +321,6 @@ supabase/
 │   ├── ai-assistant/    # Assistente de IA
 │   ├── audit-log/       # Registro de auditoria
 │   ├── siem-forward/    # Encaminhamento SIEM
-│   ├── init-demo-data/  # (removido em builds enterprise)
-│   └── init-demo-user/  # (removido em builds enterprise)
 └── config.toml          # Configuração Supabase
 ```
 
@@ -353,6 +365,13 @@ supabase/
 - **Row Level Security (RLS)**: Habilitado em todas as tabelas
 - **Autenticação**: Contas provisionadas pelo administrador; SSO opcional (OIDC/SAML)
 - **Rate Limiting**: Proteção contra brute-force no login
+- **API Payload Validation**: Allowlist de entity/action e limites de tamanho em audit/siem.
+- **Role Escalation Guard**: Role de perfil so pode ser alterada via service role.
+- **RBAC Baseline**: Roles admin/manager/analyst/viewer (viewer = leitura).
+- **RLS Answers**: Escrita de respostas permitida apenas para admin/manager/analyst/user.
+- **RLS Config**: Escrita de configuracoes e anotacoes bloqueada para viewer.
+- **Catalog Write Policies**: Escrita em tabelas globais restrita a administradores.
+- **Admin-Only Integrations**: Escrita em AI providers e SIEM restrita a administradores.
 - **Validação de Senha**: Requisitos de complexidade (8+ chars, maiúsculas, números, símbolos)
 - **Auditoria**: Logs detalhados de todas as ações
 - **Isolamento Multi-Tenant**: Dados segregados por usuário e domínio
@@ -393,6 +412,11 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 - [API Reference](docs/API.md) - Documentação das Edge Functions
 - [Architecture](docs/ARCHITECTURE.md) - Diagramas de arquitetura do sistema
 - [Contributing](docs/CONTRIBUTING.md) - Guia de contribuição
+- [Admin Console](docs/ADMIN_CONSOLE.md) - Painel administrativo
+- [Backup and DR Runbook](docs/runbooks/BACKUP_DR.md) - Procedimentos de backup e recuperacao.
+- [Data Retention](docs/DATA_RETENTION.md) - Politicas de retencao e limpeza de dados.
+- [Analytics Export](docs/ANALYTICS_EXPORT.md) - Pipeline de exportacao para analytics.
+- [Secret Provider](docs/SECRET_PROVIDER.md) - Resolver externo de segredos.
 - [Changelog](docs/CHANGELOG.md) - Histórico de mudanças
 - [LLM Reference](llm.txt) - Referência para assistentes de IA
 
@@ -400,6 +424,81 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 - Every feature, fix, or change must update the relevant docs, including README, llm.txt, and CHANGELOG.
 
+## Security Baseline
+
+See `docs/SECURITY_BASELINE.md` for the OWASP Top 10 control mapping and enterprise baseline.
+Edge Functions include `X-Request-Id` for log correlation.
+Viewer role uses read-only gating for domain/framework selection (UI and voice commands).
+Read-only roles skip maturity snapshot writes.
+Role lookups are cached client-side (60s TTL) to reduce repeated profile queries.
+Domain/framework selection rolls back locally if persistence fails.
+Read-only assessment defaults to enabled frameworks when no selection is stored.
+
+## Observability
+
+Baseline and runbooks live in:
+- `docs/OBSERVABILITY.md`
+- `docs/runbooks/INCIDENT_RESPONSE.md`
+- `docs/runbooks/ALERTS.md`
+
 ---
 
 Desenvolvido com ❤️ para a comunidade de segurança
+
+
+
+## Docker (Frontend)
+
+Build and run the frontend image:
+
+```bash
+docker build \
+  --build-arg VITE_SUPABASE_URL=http://127.0.0.1:54321 \
+  --build-arg VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key \
+  -t trustlayer-web .
+
+docker run --rm -p 8080:8080 trustlayer-web
+```
+
+Health check endpoint: `http://localhost:8080/healthz`.
+
+Optional env flags:
+- `VITE_ALLOW_LOCAL_ENDPOINTS=true` (frontend) and `ALLOW_LOCAL_ENDPOINTS=true` (Edge Functions) to allow local/private endpoints for admin-configured integrations.
+- `VITE_IMPORT_MAX_FILE_BYTES=5242880` to cap XLSX/JSON import file size.
+- `VITE_IMPORT_MAX_CELL_CHARS=2000` to cap cell length in XLSX imports.
+- `VITE_IMPORT_MAX_ROWS=5000` to cap XLSX import row count.
+- `VITE_IMPORT_MALWARE_SCAN_URL=https://scanner.local/scan` to enable optional XLSX antivirus scanning (expects multipart file upload and JSON response).
+- `VITE_IMPORT_MALWARE_SCAN_REQUIRED=true` to block imports when the scanner is unavailable or not configured.
+- `VITE_ALLOW_INLINE_SECRETS=true` to allow storing raw secrets in the database (not recommended; required for API-key STT providers).
+- `SECRET_PROVIDER_URL=https://secrets.local/resolve` to enable external secret resolver for `secret:` references (Edge Functions).
+- `SECRET_PROVIDER_TOKEN=env:SECRET_PROVIDER_TOKEN` optional auth token for the external secret resolver (supports `env:` or `file:`).
+- `SECRET_PROVIDER_TIMEOUT_MS=10000` to set the external secret resolver timeout (ms).
+- See `docs/SECRET_PROVIDER.md` for the external resolver contract.
+- `VITE_ANALYTICS_EXPORT_ENABLED=true` to enable analytics export hooks from the frontend.
+- `ANALYTICS_EXPORT_URL=https://analytics.local/ingest` to enable the analytics export Edge Function.
+- `ANALYTICS_EXPORT_TOKEN=env:ANALYTICS_EXPORT_TOKEN` optional auth token for analytics export (supports `env:` or `file:`).
+- `ANALYTICS_EXPORT_TIMEOUT_MS=10000` to set the analytics export timeout (ms).
+- `ANALYTICS_EXPORT_INCLUDE_USER_ID=false` to control whether user IDs are included in analytics payloads.
+- See `docs/ANALYTICS_EXPORT.md` for the analytics export contract.
+- `VITE_IDLE_TIMEOUT_MINUTES=0` to disable/enable idle logout (set to minutes > 0).
+- `VITE_SESSION_MAX_MINUTES=0` to disable/enable absolute session timeout (minutes > 0).
+- STT API keys are only fetched from profiles when `VITE_ALLOW_INLINE_SECRETS=true`.
+- `ALLOWED_ORIGINS=https://app.example.com` to restrict Edge Function CORS origins.
+- `MAX_REQUEST_BODY_BYTES=1048576` to cap Edge Function payload size.
+- `AUDIT_GEO_LOOKUP_ENABLED=true` to enable external geo lookup enrichment.
+- `MAX_AI_MESSAGES=50` to cap AI message payload size.
+- `MAX_AI_MESSAGE_CHARS=4000` to cap characters per AI message.
+- `MAX_AI_TOTAL_CHARS=20000` to cap total characters across AI messages.
+- `RATE_LIMIT_WINDOW_SECONDS=60` to define the Edge Function rate limit window.
+- `AI_ASSISTANT_RATE_LIMIT_MAX=60` to cap AI assistant requests per window.
+- `AUDIT_LOG_RATE_LIMIT_MAX=120` to cap audit log requests per window.
+- `SIEM_FORWARD_RATE_LIMIT_MAX=60` to cap SIEM forward requests per window.
+- `ANALYTICS_EXPORT_RATE_LIMIT_MAX=60` to cap analytics export requests per window.
+- `HTTP_PROXY=http://proxy.local:8080` to proxy outbound Edge Function traffic.
+- `HTTPS_PROXY=http://proxy.local:8443` to proxy outbound HTTPS traffic.
+- `NO_PROXY=localhost,127.0.0.1,::1,.internal` to bypass the proxy for specific hosts.
+- `CUSTOM_CA_CERT=...` to trust a custom CA bundle (PEM) for TLS inspection.
+- `CUSTOM_CA_CERT_BASE64=...` to trust a custom CA bundle (base64) for TLS inspection.
+
+
+

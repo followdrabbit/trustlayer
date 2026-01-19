@@ -49,6 +49,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useAnswersStore } from '@/lib/stores';
 import { SecurityDomain, getAllSecurityDomains, DOMAIN_COLORS } from '@/lib/securityDomains';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canEditAssessments } from '@/lib/roles';
 import { toast } from 'sonner';
 
 const ICON_COMPONENTS: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -78,6 +80,9 @@ export function AppSidebar() {
   };
   
   const { selectedSecurityDomain, setSelectedSecurityDomain } = useAnswersStore();
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
+  const isReadOnly = !canEdit;
   const [domains, setDomains] = useState<SecurityDomain[]>([]);
   const [currentDomain, setCurrentDomain] = useState<SecurityDomain | null>(null);
 
@@ -105,6 +110,7 @@ export function AppSidebar() {
   }, [domains, selectedSecurityDomain]);
 
   const handleDomainChange = async (domain: SecurityDomain) => {
+    if (isReadOnly) return;
     if (domain.domainId !== selectedSecurityDomain) {
       await setSelectedSecurityDomain(domain.domainId);
       setCurrentDomain(domain);
@@ -158,8 +164,11 @@ export function AppSidebar() {
                       className={cn(
                         "w-full transition-colors",
                         domainColors.bg,
-                        "hover:opacity-90"
+                        "hover:opacity-90",
+                        isReadOnly && "opacity-60 cursor-not-allowed"
                       )}
+                      disabled={isReadOnly}
+                      aria-disabled={isReadOnly}
                     >
                       <DomainIcon className={cn("h-4 w-4", domainColors.text)} />
                       {!isCollapsed && (
@@ -192,8 +201,10 @@ export function AppSidebar() {
                           onClick={() => handleDomainChange(domain)}
                           className={cn(
                             "cursor-pointer gap-3 py-2.5 min-h-[48px]",
+                            isReadOnly && "cursor-not-allowed opacity-60",
                             isSelected && "bg-accent"
                           )}
+                          disabled={isReadOnly}
                         >
                           <div className={cn(
                             "flex items-center justify-center rounded-md p-1.5",

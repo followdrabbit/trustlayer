@@ -20,6 +20,7 @@ state, and lists gaps and TODOs.
 - Admin console for global settings (restricted access)
 - User settings limited to profile-specific preferences
 - Admin-controlled user provisioning (no self-signup)
+- Admin-driven initial catalog import (post-install)
 - Modular dashboards with admin-configurable layouts and catalog
 - No demo user or demo data in enterprise builds
 - Security best practices for sessions, APIs, and data protection
@@ -43,68 +44,55 @@ state, and lists gaps and TODOs.
 
 | Area | Current | Target | TODO |
 | --- | --- | --- | --- |
-| Deployment | Vite dev/prod local | K8s-ready images and Helm charts | Create Dockerfiles, Helm charts, and CI image pipeline |
+| Deployment | Vite dev/prod local | K8s-ready images and Helm charts | Dockerfile criado; Helm/CI pipeline pendentes |
 | Deployment Modes | Single default | Split + in-cluster + on-prem | Document supported topologies and network/TLS patterns |
 | Backend Platform | Managed Supabase | Self-hosted Supabase in K8s | Define cluster topology, storage, and upgrades |
 | Database | Supabase Postgres | HA Postgres + backups | Add backup/restore, PITR, monitoring, and PGBouncer |
 | External DB | Not supported | RDS/on-prem BDS | Add configuration, connectivity checks, and support guides |
-| Analytics | Not supported | Optional ADX | Define export pipeline or connector |
-| Framework Catalog | Static JSON | Admin-managed catalog | Build UI + API to create/update frameworks/domains/questions |
-| XLSX Import | Not supported | Standardized import | Define template, validation, and import pipeline |
-| XLSX Security | Not defined | Secure import pipeline | Add size limits, validation, malware scan, audit logs, and rate limits |
-| Data Source | Mixed | Database-only | Move all domains/frameworks/questions to DB and remove static JSON usage |
+| Analytics | Not supported | Optional ADX | Export hook via Edge Function added; ADX adapter pending |
+| Framework Catalog | Static JSON | Admin-managed catalog | UI de gerenciamento existente; policies admin-only para escrita de catalogo implementadas |
+| XLSX Import | Not supported | Standardized import | Template XLSX e validacao implementados; preview/dry-run concluido |
+| XLSX Security | Not defined | Secure import pipeline | Limites de tamanho, linhas e formulas aplicados; rate limits server-side basicos implementados; bloqueio de macros/objetos embutidos e hook opcional de malware scan adicionados |
+| Data Source | Mixed | Database-only | Concluido (catalogo somente no DB) |
 | Test Coverage | Unknown | Full coverage | Define coverage targets, enforce in CI, add missing tests |
 | Documentation | Partial | Complete | Add user/admin/ops docs and maintenance runbooks |
 | Doc Governance | Not defined | Mandatory updates | Update README/llm.txt/docs/CHANGELOG on every change |
-| Admin Console | Not defined | Restricted admin UI | Build admin panel for global settings and health |
-| User Settings | Mixed scope | Profile-only | Move global settings to admin; keep personal prefs only |
-| User Provisioning | Self-signup | Admin-controlled | Remove self-signup; admin creates users or LDAP/EntraID |
-| Demo Access | Demo user/data | Disabled | Remove demo user and demo data paths from enterprise builds |
-| Security Baseline | Partial | Enterprise baseline | Define session security, API hardening, and data protection controls |
-| Dashboards | Fixed layouts | Modular + configurable | Create catalog of widgets and admin layout editor |
+| Admin Console | Not defined | Restricted admin UI | Concluido (rota protegida /admin) + RLS admin-only para integracoes globais |
+| User Settings | Mixed scope | Profile-only | Concluido (somente preferencias pessoais) |
+| User Provisioning | Self-signup | Admin-controlled | Concluido (sem signup; provisionamento admin) |
+| Initial Catalog | Not defined | Admin import | Documentado; UI admin usa import existente |
+| Demo Access | Demo user/data | Disabled | Concluido (demo removido) |
+| Security Baseline | Partial | Enterprise baseline | Baseline criado; hardening adicional pendente |
+| Dashboards | Fixed layouts | Modular + configurable | Concluido (catalogo de widgets, layouts admin configuraveis) |
 | Auth | Email/password | SSO (OIDC/SAML), MFA | Implement enterprise SSO, enforce policies |
-| IAM | Basic user profile | RBAC + tenant roles | Define roles/permissions and enforce in UI + backend |
+| IAM | Basic user profile | RBAC + tenant roles | Roles baseline documented; constraints + RLS for viewer on writes; UI gating completed (domain/framework selection + voice commands) |
 | Audit | Edge audit logs | Centralized, immutable audit | Extend audit to all sensitive actions and export to SIEM |
-| Observability | Limited | Logs, metrics, traces | Add OpenTelemetry, dashboards, alerts |
-| Secrets | .env file | Secret manager | Integrate with K8s Secrets/Vault/ASM/KeyVault |
-| KMS/Vault | Not supported | Multi-provider | Add integrations for KMS and on-prem vaults |
+| Observability | Limited | Logs, metrics, traces | Structured logs com request ID; baseline de observabilidade e runbooks adicionados; OpenTelemetry, dashboards e alertas pendentes |
+| Secrets | .env + secret refs | Secret manager | Concluido (env/file secret references + docs) |
+| KMS/Vault | Not supported | Multi-provider | Parcial: env/file refs + resolver externo (secret:); provider adapters pending |
 | Compliance | Partial | Evidence + reports | Add compliance packs, exportable evidence, retention |
 | Storage | Supabase storage | Encrypted + retention | Configure S3-compatible storage, encryption at rest |
 | Multi-tenancy | RLS | RLS + org isolation | Validate RLS, add org boundary checks |
 | Data residency | N/A | Configurable | Define deployment options per region |
 | CI/CD | Basic scripts | Build/scan/release | Add image signing and SCA/SAST in pipeline |
-| Security | Basic policies | Hardening | Add network policies, WAF, rate limits |
-| Container Hardening | Not defined | Non-root images | Create Dockerfiles with non-root user and minimal base |
-| Secret Exposure | Not defined | Zero exposure | Enforce secret scanning, redaction, and secure logging |
-| OWASP Top 10 | Not defined | Covered | Map controls to OWASP Top 10 and verify mitigations |
-| Proxy Support | Not defined | Supported | Add proxy configuration for outbound services and docs |
-| Observability | Limited | SLO-based | Define logs/metrics/traces, SLOs, alerting, on-call |
-| Backup/DR | Not defined | RPO/RTO defined | Define backup, restore tests, and DR playbooks |
-| Data Retention | Not defined | Policy-driven | Define retention, deletion, and legal hold |
+| Security | Basic policies | Hardening | Headers, SSRF baseline, JWT enforcement, CORS allowlist e limites de payload aplicados; rate limits basicos e timeouts de sessao (client-side) implementados; WAF/ingress pendente |
+| Container Hardening | Not defined | Non-root images | Concluido (Dockerfile non-root) |
+| Secret Exposure | Not defined | Zero exposure | Log redaction implemented; secret scanning and CI policies pending |
+| OWASP Top 10 | Not defined | Covered | Mapeamento criado; mitigacoes parciais aplicadas (API auth/CORS/limites) |
+| Proxy Support | Not defined | Supported | Concluido (HTTP_PROXY/HTTPS_PROXY/NO_PROXY + custom CA docs) |
+| Observability | Limited | SLO-based | SLOs definidos em documentacao; alertas, dashboards e on-call pendentes |
+| Backup/DR | Not defined | RPO/RTO defined | Runbook documented; define RPO/RTO per deployment and execute restore tests |
+| Data Retention | Not defined | Policy-driven | Policy doc + cleanup script for audit/snapshots/metrics; legal hold workflow pending |
 | Privacy Compliance | Partial | LGPD/GDPR aligned | Add consent, data subject workflows, and DPIA |
 | Secure SDLC | Partial | Full coverage | Add SAST/SCA, SBOM, image signing, vuln scanning |
 | Incident Response | Not defined | Defined | Create incident response and escalation runbooks |
 | Release Gates | Partial | Enforced | Block releases on coverage, docs, security checks |
 | SLAs | None | Enterprise SLAs | Define availability and incident response |
 
-## Next ADRs to Create
-- ADR: SSO provider strategy (OIDC/SAML, IdP list)
-- ADR: RBAC model (roles, scopes, and permission mapping)
-- ADR: Data retention and backup strategy
-- ADR: Observability stack selection
-- ADR: Data access abstraction and analytics integration
-- ADR: Framework catalog defaults and XLSX import
-- ADR: Admin console, auth, and provisioning model
-- ADR: Modular dashboard catalog and layout management
-- ADR: Security baseline and hardening checklist
-- ADR: Secret management and KMS integration
-- ADR: Container hardening and Dockerfile standards
-- ADR: Observability and SLOs
-- ADR: Backup and disaster recovery
-- ADR: Data retention and privacy compliance
-- ADR: Proxy support
-- ADR: Secure SDLC and supply chain controls
-
+## ADRs for Enterprise Gaps
+- `docs/adr/0021-sso-provider-strategy.md`
+- `docs/adr/0022-rbac-model.md`
+- `docs/adr/0023-data-access-abstraction-and-analytics.md`
 ## Default Framework Catalog (Out-of-the-Box)
 
 ### 1) Guarda-chuva (maturidade cross-domain)
@@ -135,3 +123,4 @@ state, and lists gaps and TODOs.
 
 ## Notes
 This is a living document. Update as decisions are made and ADRs are added.
+

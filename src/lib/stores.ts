@@ -11,13 +11,11 @@ import {
   setSelectedFrameworks as dbSetSelectedFrameworks,
   getEnabledFrameworks,
   setEnabledFrameworks as dbSetEnabledFrameworks,
-  getAllCustomQuestions,
-  getDisabledQuestions,
   getSelectedSecurityDomain,
   setSelectedSecurityDomain as dbSetSelectedSecurityDomain
 } from './database';
-import { questions as defaultQuestions, getQuestionById } from './dataset';
-import { getDefaultEnabledFrameworks, getPrimaryFrameworkId, getFrameworksBySecurityDomain } from './frameworks';
+import { getQuestionById, loadCatalogFromDatabase } from './dataset';
+import { getDefaultEnabledFrameworks, getFrameworksBySecurityDomain, loadFrameworksFromDatabase } from './frameworks';
 import { getDefaultSecurityDomainId } from './securityDomains';
 
 interface AnswersState {
@@ -32,7 +30,6 @@ interface AnswersState {
   setAnswer: (questionId: string, updates: Partial<Omit<Answer, 'questionId' | 'frameworkId'>>) => Promise<void>;
   clearAnswers: () => Promise<void>;
   importAnswers: (newAnswers: Answer[]) => Promise<void>;
-  generateDemoData: () => Promise<void>;
   getAnswer: (questionId: string) => Answer | undefined;
   setEnabledFrameworks: (frameworkIds: string[]) => Promise<void>;
   setSelectedFrameworks: (frameworkIds: string[]) => Promise<void>;
@@ -40,21 +37,24 @@ interface AnswersState {
   getAnswersByFramework: (frameworkId: string) => Answer[];
 }
 
-const defaultEnabledFrameworks = getDefaultEnabledFrameworks().map(f => f.frameworkId);
 const defaultSecurityDomain = getDefaultSecurityDomainId();
 
 export const useAnswersStore = create<AnswersState>()((set, get) => ({
   answers: new Map(),
   isLoading: true,
   lastUpdated: null,
-  enabledFrameworks: defaultEnabledFrameworks,
+  enabledFrameworks: [],
   selectedFrameworks: [],
   selectedSecurityDomain: defaultSecurityDomain,
 
   loadAnswers: async () => {
     set({ isLoading: true });
     try {
-      await initializeDatabase();
+      await Promise.all([
+        initializeDatabase(),
+        loadCatalogFromDatabase(),
+        loadFrameworksFromDatabase(),
+      ]);
       const storedAnswers = await getAllAnswers();
       const answersMap = new Map<string, Answer>();
       storedAnswers.forEach(a => answersMap.set(a.questionId, a));
@@ -63,6 +63,8 @@ export const useAnswersStore = create<AnswersState>()((set, get) => ({
       const selectedFw = await getSelectedFrameworks();
       const selectedDomain = await getSelectedSecurityDomain();
       
+      const defaultEnabledFrameworks = getDefaultEnabledFrameworks().map(f => f.frameworkId);
+
       set({ 
         answers: answersMap, 
         isLoading: false,
@@ -127,90 +129,47 @@ export const useAnswersStore = create<AnswersState>()((set, get) => ({
     }
   },
 
-  generateDemoData: async () => {
-    const demoAnswers: Answer[] = [];
-
-    // Load custom questions and disabled questions
-    const [customQuestions, disabledQuestionIds] = await Promise.all([
-      getAllCustomQuestions(),
-      getDisabledQuestions()
-    ]);
-
-    // Combine default and custom questions, excluding disabled ones
-    const allQuestions = [
-      ...defaultQuestions.filter(q => !disabledQuestionIds.includes(q.questionId)),
-      ...customQuestions.filter(q => !q.isDisabled)
-    ];
-
-    allQuestions.forEach((q) => {
-      const rand = Math.random();
-      let response: Answer['response'];
-      if (rand < 0.35) response = 'Sim';
-      else if (rand < 0.65) response = 'Parcial';
-      else if (rand < 0.88) response = 'Não';
-      else response = 'NA';
-
-      let evidenceOk: Answer['evidenceOk'] = null;
-      if (response !== 'NA') {
-        const evidRand = Math.random();
-        if (response === 'Sim') {
-          evidenceOk = evidRand < 0.6 ? 'Sim' : evidRand < 0.9 ? 'Parcial' : 'Não';
-        } else if (response === 'Parcial') {
-          evidenceOk = evidRand < 0.3 ? 'Sim' : evidRand < 0.7 ? 'Parcial' : 'Não';
-        } else {
-          evidenceOk = evidRand < 0.2 ? 'Parcial' : 'Não';
-        }
-      }
-
-      // Get the primary framework from the question's frameworks array
-      const frameworkId = getPrimaryFrameworkId(q.frameworks) || 
-                          (q as any).frameworkId || 
-                          'NIST_AI_RMF';
-
-      demoAnswers.push({
-        questionId: q.questionId,
-        frameworkId,
-        response,
-        evidenceOk,
-        notes: response === 'Não' ? 'Pendente de implementação' : '',
-        evidenceLinks: response === 'Sim' ? ['https://docs.example.com/policy'] : [],
-        updatedAt: new Date().toISOString(),
-      });
-    });
-
-    await get().importAnswers(demoAnswers);
-  },
-
   getAnswer: (questionId: string) => {
     return get().answers.get(questionId);
   },
 
   setEnabledFrameworks: async (frameworkIds: string[]) => {
+    const previous = get().enabledFrameworks;
     set({ enabledFrameworks: frameworkIds });
     try {
       await dbSetEnabledFrameworks(frameworkIds);
     } catch (error) {
       console.error('Error saving enabled frameworks:', error);
+      set({ enabledFrameworks: previous });
     }
   },
 
   setSelectedFrameworks: async (frameworkIds: string[]) => {
+    const previous = get().selectedFrameworks;
     set({ selectedFrameworks: frameworkIds });
     try {
       await dbSetSelectedFrameworks(frameworkIds);
     } catch (error) {
       console.error('Error saving selected frameworks:', error);
+      set({ selectedFrameworks: previous });
     }
   },
 
   setSelectedSecurityDomain: async (domainId: string) => {
     // When changing domain, clear the selected frameworks for a fresh start
+    const previousDomain = get().selectedSecurityDomain;
+    const previousSelected = get().selectedFrameworks;
     set({ selectedSecurityDomain: domainId, selectedFrameworks: [], lastUpdated: new Date().toISOString() });
     try {
       await dbSetSelectedSecurityDomain(domainId);
       await dbSetSelectedFrameworks([]);
     } catch (error) {
       console.error('Error saving selected security domain:', error);
+      set({
+        selectedSecurityDomain: previousDomain,
+        selectedFrameworks: previousSelected,
+        lastUpdated: new Date().toISOString(),
+      });
     }
   },
 

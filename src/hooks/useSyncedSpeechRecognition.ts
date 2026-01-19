@@ -5,6 +5,9 @@ import { useVoiceProfile } from '@/hooks/useVoiceProfile';
 import { AudioFeatureExtractor } from '@/lib/voiceProfile/audioFeatureExtractor';
 import { SpeakerVerifier } from '@/lib/voiceProfile/speakerVerifier';
 import { VerificationResult } from '@/lib/voiceProfile/types';
+import { validateExternalUrl } from '@/lib/urlValidation';
+import { isInlineSecretAllowed } from '@/lib/secretInput';
+import { getSTTProvider } from '@/lib/sttProviders';
 
 export interface SpeechRecognitionError {
   type: 'no-speech' | 'audio-capture' | 'not-allowed' | 'network' | 'aborted' | 'api-error' | 'voice-rejected' | 'unknown';
@@ -114,6 +117,7 @@ export function useSyncedSpeechRecognition(): UseSyncedSpeechRecognitionReturn {
 
     const initProvider = async () => {
       const providerId = settings.stt_provider || 'web-speech-api';
+      const providerMeta = getSTTProvider(providerId);
       
       // Skip if same provider is already initialized
       if (currentProviderIdRef.current === providerId && providerRef.current) {
@@ -127,6 +131,36 @@ export function useSyncedSpeechRecognition(): UseSyncedSpeechRecognitionReturn {
       }
 
       try {
+        if (providerMeta?.requiresApiKey) {
+          if (!isInlineSecretAllowed()) {
+            setIsSupported(false);
+            setError({
+              type: 'not-allowed',
+              message: 'Chaves de API inline desabilitadas para STT. Use Web Speech API ou habilite a politica.',
+            });
+            return;
+          }
+
+          if (!settings.stt_api_key) {
+            setIsSupported(false);
+            setError({
+              type: 'api-error',
+              message: 'Chave de API de STT nao configurada.',
+            });
+            return;
+          }
+        }
+
+        if (providerMeta?.requiresEndpoint && !settings.stt_endpoint_url) {
+          setIsSupported(false);
+          setError({
+            type: 'api-error',
+            message: 'Endpoint de STT nao configurado.',
+          });
+          return;
+        }
+
+        setError(null);
         const provider = createSTTProvider(providerId);
         
         // Check if supported before initializing
@@ -145,6 +179,18 @@ export function useSyncedSpeechRecognition(): UseSyncedSpeechRecognitionReturn {
           model: settings.stt_model || 'whisper-1',
           endpointUrl: settings.stt_endpoint_url || undefined,
         };
+
+        if (config.endpointUrl) {
+          const check = validateExternalUrl(config.endpointUrl);
+          if (!check.ok) {
+            setIsSupported(false);
+            setError({
+              type: 'api-error',
+              message: 'Endpoint de STT invalido.',
+            });
+            return;
+          }
+        }
 
         await provider.initialize(config);
         

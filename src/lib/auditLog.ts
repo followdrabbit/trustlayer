@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 
 export interface AuditLogEntry {
-  entityType: 'framework' | 'question' | 'setting' | 'answer';
+  entityType: 'framework' | 'question' | 'setting' | 'answer' | 'catalog';
   entityId: string;
   action: 'create' | 'update' | 'delete' | 'disable' | 'enable';
   changes: Record<string, unknown>;

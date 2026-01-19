@@ -1,14 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Wrench, Download } from 'lucide-react';
 import { DomainSwitcher } from '@/components/DomainSwitcher';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { useUserRole } from '@/hooks/useUserRole';
 import { domains, maturityLevels } from '@/lib/dataset';
 import { frameworkCategoryLabels, frameworkCategoryColors, FrameworkCategoryId } from '@/lib/frameworkCategories';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { cn } from '@/lib/utils';
+import { canEditAssessments } from '@/lib/roles';
 import MaturityTrendChart from '@/components/MaturityTrendChart';
 import { DomainSpecificIndicators } from '@/components/DomainSpecificIndicators';
 import { 
@@ -53,6 +56,7 @@ import {
   DashboardSection,
   DashboardRoadmapGrid,
   PeriodComparisonCard,
+  DashboardLayoutRenderer,
 } from '@/components/dashboard';
 
 // Framework category labels and colors imported from shared lib
@@ -72,6 +76,9 @@ const criticalityOrder: Record<string, number> = {
 export default function DashboardSpecialist() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { layout } = useDashboardLayout('specialist');
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
 
   // Use centralized dashboard metrics hook
   const {
@@ -676,6 +683,11 @@ export default function DashboardSpecialist() {
     });
   };
 
+  const handleToggleFramework = (frameworkId: string) => {
+    if (!canEdit) return;
+    toggleFramework(frameworkId);
+  };
+
   // Export report handler
   const handleExportReport = () => {
     // Filter enabled frameworks by selected IDs (or use all enabled if none selected)
@@ -700,22 +712,8 @@ export default function DashboardSpecialist() {
     return <div className="flex items-center justify-center h-64">{t('dashboard.loading')}</div>;
   }
 
-  return (
-    <div 
-      className={cn(
-        "space-y-6 transition-all duration-300 ease-out",
-        isTransitioning && "opacity-50 scale-[0.99] blur-[1px]"
-      )}
-    >
-      {/* Breadcrumb */}
-      <PageBreadcrumb 
-        items={[
-          { label: t('dashboard.dashboards'), href: '/dashboard' },
-          { label: t('navigation.specialist'), icon: Wrench }
-        ]} 
-      />
-
-      {/* Header with Domain Switcher and Framework Selector */}
+  const widgets: Record<string, ReactNode> = {
+    'specialist.header': (
       <DashboardHeader
         title={t('dashboard.specialistTitle')}
         subtitle={t('dashboard.specialistSubtitle')}
@@ -726,13 +724,15 @@ export default function DashboardSpecialist() {
         <DashboardFrameworkSelector
           frameworks={enabledFrameworks}
           selectedIds={selectedFrameworkIds}
-          onToggle={toggleFramework}
+          onToggle={handleToggleFramework}
           helpTooltip={<FrameworkCategoryHelp />}
+          disabled={!canEdit}
         />
       </DashboardHeader>
 
 
-      {/* Quick Filter Pills - Enhanced with animations */}
+    ),
+    'specialist.filters': (
       <div className="flex flex-wrap gap-2 animate-in fade-in-0 slide-in-from-left-4 duration-500" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
         <Badge 
           variant={criticalityFilter === 'all' ? 'default' : 'outline'}
@@ -794,7 +794,8 @@ export default function DashboardSpecialist() {
         </Badge>
       </div>
 
-      {/* Specialist KPIs - Standardized */}
+    ),
+    'specialist.kpis': (
       <DashboardKPIGrid columns={4}>
         <DashboardKPICard
           label={t('dashboard.totalQuestions')}
@@ -828,14 +829,16 @@ export default function DashboardSpecialist() {
         />
       </DashboardKPIGrid>
 
-      {/* Domain-Specific Indicators */}
+    ),
+    'specialist.indicators': (
       <DomainSpecificIndicators 
         securityDomainId={currentDomainInfo?.domainId || 'AI_SECURITY'}
         questions={questionsForDashboard}
         answers={answers}
       />
 
-      {/* Technical Roadmap - Standardized */}
+    ),
+    'specialist.roadmap': (
       <DashboardRoadmapGrid
         items={roadmap}
         title={t('dashboard.technicalRoadmap')}
@@ -850,7 +853,8 @@ export default function DashboardSpecialist() {
         }}
       />
 
-      {/* Tabs for different views */}
+    ),
+    'specialist.tabs': (
       <Tabs defaultValue="gaps" className="space-y-4">
         <TabsList>
           <TabsTrigger value="gaps">{t('dashboard.technicalGaps')}</TabsTrigger>
@@ -1333,6 +1337,33 @@ export default function DashboardSpecialist() {
           </div>
         </TabsContent>
       </Tabs>
+    ),
+    'shared.periodComparison': (
+      <PeriodComparisonCard 
+        securityDomainId={currentDomainInfo?.domainId}
+        className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500" 
+      />
+    ),
+    'shared.maturityTrend': (
+      <MaturityTrendChart className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-100" />
+    ),
+  };
+
+  return (
+    <div 
+      className={cn(
+        "space-y-6 transition-all duration-300 ease-out",
+        isTransitioning && "opacity-50 scale-[0.99] blur-[1px]"
+      )}
+    >
+      <PageBreadcrumb 
+        items={[
+          { label: t('dashboard.dashboards'), href: '/dashboard' },
+          { label: t('navigation.specialist'), icon: Wrench }
+        ]} 
+      />
+
+      <DashboardLayoutRenderer layout={layout} widgets={widgets} />
 
       {/* Subcategory Details Modal */}
       <Dialog open={!!selectedSubcategory} onOpenChange={(open) => !open && setSelectedSubcategory(null)}>
@@ -2346,16 +2377,6 @@ export default function DashboardSpecialist() {
             </>
           )}
         </DialogContent>
-      </Dialog>
-
-      {/* Period Comparison */}
-      <PeriodComparisonCard 
-        securityDomainId={currentDomainInfo?.domainId}
-        className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500" 
-      />
-
-      {/* Maturity Trend Chart */}
-      <MaturityTrendChart className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-100" />
-    </div>
+      </Dialog>    </div>
   );
 }

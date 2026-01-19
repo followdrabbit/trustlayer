@@ -1,6 +1,6 @@
 # ADR 0015: Proxy Support
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-01-17
 
 ## Context
@@ -11,6 +11,8 @@ or custom TLS inspection. The platform must work in proxy-restricted networks.
 Support proxy configuration for outbound services with standard environment
 variables and documented TLS/CA handling. This includes AI providers, SIEM
 forwarding, and update checks.
+- Use `HTTP_PROXY`, `HTTPS_PROXY`, and `NO_PROXY` for outbound routing.
+- Support custom CA bundles via `CUSTOM_CA_CERT` or `CUSTOM_CA_CERT_BASE64`.
 
 ## Consequences
 - Requires consistent proxy support across services.
@@ -18,4 +20,3 @@ forwarding, and update checks.
 
 ## Alternatives Considered
 - Assume direct internet access (not valid for enterprise environments).
-

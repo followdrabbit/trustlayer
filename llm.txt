@@ -34,6 +34,7 @@ src/
 │   ├── DashboardGRC.tsx         # Governance/Risk/Compliance view
 │   ├── DashboardSpecialist.tsx  # Technical specialist view
 │   ├── Settings.tsx     # Configuration panels
+  �"'   �"o�"?�"? AdminConsole.tsx # Admin-only global configuration
 │   └── Profile.tsx      # User profile
 ├── hooks/               # Custom React hooks
 │   ├── useDashboardMetrics.ts   # Core metrics calculation
@@ -48,7 +49,7 @@ src/
 │   ├── securityDomains.ts       # Domain management
 │   ├── siemIntegration.ts       # SIEM forwarding
 │   └── auditLog.ts      # Audit logging
-├── data/                # Static JSON (questions, taxonomy, frameworks)
+├── data/                # (legacy) catalog data moved to database
 ├── i18n/                # Internationalization
 │   └── locales/         # Translation files
 └── integrations/        # External integrations
@@ -59,8 +60,6 @@ supabase/
     ├── ai-assistant/    # AI chat with multiple providers
     ├── audit-log/       # Audit logging with geolocation
     ├── siem-forward/    # SIEM event forwarding
-    ├── init-demo-user/  # (removed in enterprise builds)
-    └── init-demo-data/  # (removed in enterprise builds)
 
 docs/
 ├── API.md               # Edge Functions API documentation
@@ -80,6 +79,7 @@ docs/
 - **Executive**: C-level KPIs, maturity scores, strategic roadmap
 - **GRC**: Framework coverage, compliance metrics, audit readiness
 - **Specialist**: Technical gaps, category-level analysis, evidence tracking
+- **Layouts Modulares (Admin)**: Widget catalog and layout ordering per dashboard
 
 ### 3. AI Assistant
 - Multi-provider support (Lovable AI, OpenAI, Claude, Gemini, Ollama)
@@ -89,11 +89,17 @@ docs/
 
 ### 4. Voice System
 - **STT**: Web Speech API, OpenAI Whisper, custom endpoints
+- STT API-key providers require a configured key; otherwise voice input is disabled.
 - **TTS**: Native browser voices with queue management
 - **Voice Profile**: Biometric enrollment with MFCC feature extraction
 - **Commands**: Navigation, domain switching, data queries, exports
 
 ### 5. Integrations
+### 6. Admin Console
+- **Global settings**: catalog management, framework enablement, SIEM, AI providers, audit logs
+- Catalog imports include preview/dry-run with sample records and integrity checks.
+- XLSX catalog templates include `templateVersion` metadata.
+- **User settings** remain on `/settings` (language, theme, voice, notifications)
 - **SIEM**: JSON, CEF, LEEF, Syslog formats
 - **Audit Logging**: IP, geolocation, device info
 - **Export**: HTML reports, Excel spreadsheets
@@ -109,6 +115,7 @@ docs/
 | `custom_questions` | User-created questions |
 | `answers` | Assessment responses with evidence |
 | `maturity_snapshots` | Historical maturity data |
+| `dashboard_layouts` | Admin-configured dashboard layouts |
 | `ai_providers` | AI provider configurations |
 | `siem_integrations` | SIEM endpoint configurations |
 | `change_logs` | Audit trail |
@@ -120,6 +127,17 @@ docs/
 - **RLS**: Row Level Security on all user data tables
 - **Authentication**: Admin-provisioned accounts; SSO optional (OIDC/SAML)
 - **Rate Limiting**: Client-side exponential backoff on login
+- **API Payload Validation**: Allowlist for audit/siem entities/actions with size limits.
+- **Role Escalation Guard**: Profile role changes restricted to service role.
+- **RBAC Baseline**: Roles admin/manager/analyst/viewer (viewer = read-only).
+- **RLS Answers**: Writes allowed only for admin/manager/analyst/user.
+- **RLS Config**: Viewer blocked from writing assessment config, annotations, and snapshots.
+- **Read-Only UI**: Viewer role cannot change domain/framework selection (UI and voice commands).
+- **Read-Only Assessment**: Defaults to enabled frameworks when no selection is stored.
+- **Snapshots**: Auto-capture disabled for read-only roles.
+- **Role Cache**: useUserRole caches profile roles (60s TTL) to reduce repeated queries.
+- **Catalog Write Policies**: Global catalog tables are admin-write only.
+- **Admin-Only Integrations**: AI providers and SIEM writes are admin-only.
 - **Password Policy**: 8+ chars, mixed case, numbers, symbols
 - **Multi-tenant Isolation**: User and domain-scoped data
 
@@ -143,6 +161,14 @@ npm run dev
 # Run tests
 npm run test
 
+# Provision initial admin (server-side only)
+npm run provision:admin
+
+# Provision local user (server-side only)
+# Provision local user (server-side only)
+# USER_ROLE=admin|manager|analyst|viewer|user (user = legacy)
+npm run provision:user
+
 # Build for production
 npm run build
 ```
@@ -155,6 +181,7 @@ npm run build
 
 ### State Management
 - **Zustand**: Security domain and framework selection
+- **Zustand**: Selection state rolls back on persistence errors.
 - **React Query**: Async data (answers, snapshots, providers)
 - **Local State**: UI state, form state
 
@@ -169,8 +196,92 @@ npm run build
 - `/docs/ARCHITECTURE.md` - System architecture with Mermaid diagrams
 - `/docs/LINKEDIN_POST.md` - Marketing and announcement content
 - `/docs/screenshots/README.md` - Screenshot capture guidelines
+- `/docs/SETUP.md` - Admin bootstrap and catalog import
+- `/docs/runbooks/BACKUP_DR.md` - Backup and DR runbook
+- /docs/ADMIN_CONSOLE.md - Admin panel scope and access
+- `/docs/catalog/README.md` - Catalog import files
 - Documentation policy: every feature, fix, or change must update README, llm.txt, relevant docs, and CHANGELOG.
 
 ## Contact
 
 - **Repository**: GitHub (open source)
+
+## Docker (Frontend)
+
+```bash
+docker build \
+  --build-arg VITE_SUPABASE_URL=http://127.0.0.1:54321 \
+  --build-arg VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key \
+  -t trustlayer-web .
+
+docker run --rm -p 8080:8080 trustlayer-web
+```
+
+## Security Baseline
+
+- OWASP Top 10 mapping and baseline: `docs/SECURITY_BASELINE.md`
+- Edge Functions return X-Request-Id for log correlation.
+- XLSX imports block macros/embedded objects and support optional malware scan via VITE_IMPORT_MALWARE_SCAN_URL.
+- External secret resolver supported for secret: references via SECRET_PROVIDER_URL.
+- SECRET_PROVIDER_URL is validated; local/private requires ALLOW_LOCAL_ENDPOINTS=true.
+- External secret resolver contract documented in docs/SECRET_PROVIDER.md.
+- Analytics export contract documented in docs/ANALYTICS_EXPORT.md.
+- Data retention policy and cleanup script documented in docs/DATA_RETENTION.md.
+- Observability baseline and runbooks: docs/OBSERVABILITY.md and docs/runbooks.
+
+- Optional env:
+  - VITE_ALLOW_LOCAL_ENDPOINTS=true (frontend) and ALLOW_LOCAL_ENDPOINTS=true (Edge Functions) to allow local/private endpoints for admin integrations.
+  - VITE_IMPORT_MAX_FILE_BYTES=5242880 to cap XLSX/JSON import file size.
+  - VITE_IMPORT_MAX_CELL_CHARS=2000 to cap cell length in XLSX imports.
+  - VITE_IMPORT_MAX_ROWS=5000 to cap XLSX import row count.
+  - VITE_IMPORT_MALWARE_SCAN_URL=https://scanner.local/scan to enable optional XLSX antivirus scanning (expects multipart file upload and JSON response).
+  - VITE_IMPORT_MALWARE_SCAN_REQUIRED=true to block imports when the scanner is unavailable or not configured.
+  - VITE_ALLOW_INLINE_SECRETS=true to allow storing raw secrets in the database (not recommended; required for API-key STT providers).
+  - SECRET_PROVIDER_URL=https://secrets.local/resolve to enable external secret resolver for secret: references (Edge Functions).
+  - SECRET_PROVIDER_TOKEN=env:SECRET_PROVIDER_TOKEN optional auth token for the external secret resolver (supports env: or file:).
+  - SECRET_PROVIDER_TIMEOUT_MS=10000 to set the external secret resolver timeout (ms).
+  - VITE_ANALYTICS_EXPORT_ENABLED=true to enable analytics export hooks from the frontend.
+  - ANALYTICS_EXPORT_URL=https://analytics.local/ingest to enable the analytics export Edge Function.
+  - ANALYTICS_EXPORT_TOKEN=env:ANALYTICS_EXPORT_TOKEN optional auth token for analytics export (supports env: or file:).
+  - ANALYTICS_EXPORT_TIMEOUT_MS=10000 to set the analytics export timeout (ms).
+  - ANALYTICS_EXPORT_INCLUDE_USER_ID=false to control whether user IDs are included in analytics payloads.
+  - RETENTION_CHANGE_LOGS_DAYS=365 to delete audit logs older than N days (scripted).
+  - RETENTION_SNAPSHOTS_DAYS=730 to delete snapshots older than N days (scripted).
+  - RETENTION_SIEM_METRICS_DAYS=90 to delete SIEM metrics older than N days (scripted).
+  - RETENTION_APPLY=true to apply deletions (omit for dry-run).
+  - VITE_IDLE_TIMEOUT_MINUTES=0 to disable/enable idle logout (minutes > 0).
+  - VITE_SESSION_MAX_MINUTES=0 to disable/enable absolute session timeout (minutes > 0).
+  - STT API keys are only fetched from profiles when VITE_ALLOW_INLINE_SECRETS=true.
+  - ALLOWED_ORIGINS=https://app.example.com to restrict Edge Function CORS origins.
+  - MAX_REQUEST_BODY_BYTES=1048576 to cap Edge Function payload size.
+  - AUDIT_GEO_LOOKUP_ENABLED=true to enable external geo lookup enrichment.
+  - MAX_AI_MESSAGES=50 to cap AI message payload size.
+  - MAX_AI_MESSAGE_CHARS=4000 to cap characters per AI message.
+  - MAX_AI_TOTAL_CHARS=20000 to cap total characters across AI messages.
+  - RATE_LIMIT_WINDOW_SECONDS=60 to define the Edge Function rate limit window.
+  - AI_ASSISTANT_RATE_LIMIT_MAX=60 to cap AI assistant requests per window.
+  - AUDIT_LOG_RATE_LIMIT_MAX=120 to cap audit log requests per window.
+  - SIEM_FORWARD_RATE_LIMIT_MAX=60 to cap SIEM forward requests per window.
+  - ANALYTICS_EXPORT_RATE_LIMIT_MAX=60 to cap analytics export requests per window.
+  - HTTP_PROXY=http://proxy.local:8080 to proxy outbound Edge Function traffic.
+  - HTTPS_PROXY=http://proxy.local:8443 to proxy outbound HTTPS traffic.
+  - NO_PROXY=localhost,127.0.0.1,::1,.internal to bypass the proxy for specific hosts.
+  - CUSTOM_CA_CERT=... to trust a custom CA bundle (PEM) for TLS inspection.
+  - CUSTOM_CA_CERT_BASE64=... to trust a custom CA bundle (base64) for TLS inspection.
+
+
+- Env template: .env.example (copy to .env and fill values).
+
+
+
+
+
+
+
+
+
+
+
+
+
+

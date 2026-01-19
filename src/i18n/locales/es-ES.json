@@ -29,7 +29,6 @@
     "general": "General",
     "saveChanges": "Guardar Cambios",
     "clearAll": "Limpiar Todo",
-    "demoData": "Datos Demo",
     "importXLSX": "Importar XLSX",
     "changeFrameworks": "Cambiar Frameworks",
     "of": "de",
@@ -157,7 +156,6 @@
     "priorityActions": "Acciones Prioritarias",
     "noData": "Ninguna evaluación realizada aún.",
     "startAssessment": "Iniciar evaluación",
-    "generateDemoData": "Generar Datos Demo",
     "forAudit": "Para auditoría",
     "needDocumentation": "Necesitan documentación",
     "controlsWithoutEvidence": "Controles Sin Evidencia",
@@ -256,9 +254,6 @@
     "allGaps": "Todas las Brechas",
     "notAnswered": "Sin responder",
     "showingGaps": "Mostrando {{filtered}} de {{total}} brechas",
-    "maturityByOwner": "Madurez por Responsable",
-    "maturityByCategory": "Madurez por Categoría",
-    "lowReadinessSubcategories": "Subcategorías con Baja Preparación",
     "gapsByCriticality": "Brechas por Criticidad",
     "gapsBySubcategory": "Brechas por Subcategoría",
     "questionsByDomain": "Preguntas por Dominio",
@@ -304,7 +299,6 @@
     "gapsIdentifiedCount": "Brechas Identificadas ({{count}})",
     "gapsByDomain": "Brechas por Dominio ({{count}})",
     "showingOfGaps": "Mostrando {{showing}} de {{total}} brechas",
-    "startEvaluation": "Iniciar Evaluación",
     "close": "Cerrar"
   },
   "assessment": {
@@ -400,10 +394,9 @@
     "defaultAssessmentName": "Evaluación de Madurez en Seguridad",
     "selectAtLeastOne": "Selecciona al menos un framework",
     "settingsSaved": "Configuración guardada exitosamente",
-    "exportSuccess": "Datos exportados exitosamente",
+    "exportSuccess": "Configuración exportada exitosamente",
     "exportError": "Error al exportar datos",
     "answersCleared": "Respuestas eliminadas exitosamente",
-    "demoGenerated": "Datos de demostración generados",
     "activeFrameworks": "Frameworks Activos",
     "ofAvailable": "de {{count}} disponibles",
     "lastUpdate": "Última Actualización",
@@ -428,10 +421,6 @@
     "exportBackup": "Exportar y Respaldo",
     "exportDescription": "Exporta las respuestas y configuraciones a un archivo Excel.",
     "exportToExcel": "Exportar a Excel (.xlsx)",
-    "generateDemoDescription": "Genera datos de ejemplo para explorar los dashboards.",
-    "generateDemoData": "Generar Datos de Demostración",
-    "generateDemoTitle": "¿Generar datos de demostración?",
-    "generateDemoDescription2": "Esta acción reemplazará todas las respuestas existentes con datos simulados.",
     "generateData": "Generar Datos",
     "dangerZone": "Zona de Peligro",
     "dangerZoneDesc": "Acciones irreversibles que afectan tus datos",
@@ -542,7 +531,6 @@
     "iconKey": "Llave",
     "importDomain": "Importar Dominio",
     "exportDomain": "Exportar Dominio",
-    "exportSuccess": "Configuración exportada exitosamente",
     "importSuccess": "¡Dominio importado exitosamente!",
     "importStats": "{{domains}} áreas, {{subcategories}} subcategorías, {{frameworks}} frameworks, {{questions}} preguntas",
     "invalidFile": "Archivo inválido",
@@ -695,7 +683,7 @@
     "downloadTemplateButton": "Descargar Plantilla",
     "questionsFile": "Archivo de Preguntas",
     "selectCsvExcel": "Seleccionar Archivo CSV/Excel",
-    "supportedFormats": "Formatos soportados: .csv, .xlsx, .xls",
+    "supportedFormats": "Formato soportado: .xlsx",
     "totalRows": "Filas Total",
     "valid": "Válidas",
     "withErrors": "Con Errores",
@@ -809,8 +797,9 @@
     "accountStatus": "Estado de la Cuenta",
     "userId": "ID de Usuario",
     "emailVerified": "Correo Verificado",
-    "lastAccess": "Último Acceso"
-  },
+    "lastAccess": "Último Acceso",
+  
+    "inlineSecretsDisabled": "Las claves API inline estan deshabilitadas por politica. Habilite VITE_ALLOW_INLINE_SECRETS o use Web Speech API."},
   "securityDomains": {
     "title": "Dominio de Seguridad",
     "switch": "Cambiar Dominio de Seguridad",
@@ -831,14 +820,12 @@
     "viewDashboard": "Ver Panel",
     "getStarted": "Comenzar Evaluación",
     "selectFrameworks": "Seleccionar Frameworks",
-    "demoData": "Datos Demo",
-    "tryDemo": "Probar con Demo",
     "gettingStarted": "Comenzando Ahora",
     "howToUse": "Cómo Usar la Herramienta",
     "howToUseDesc": "Sigue estos 4 pasos simples para explorar todas las funcionalidades",
     "quickTip": "Consejo Rápido",
     "tipLabel": "Consejo:",
-    "tipText": "Usa los datos de demostración para entender el funcionamiento antes de iniciar tu evaluación real.",
+    "tipText": "Asegurese de que el catalogo inicial este importado por el administrador antes de iniciar la evaluacion.",
     "mainFeatures": "Características Principales",
     "mainFeaturesDesc": "Todo lo que necesitas para una evaluación completa de seguridad en IA",
     "whyUse": "¿Por qué usar esta herramienta?",
@@ -855,8 +842,8 @@
     "step1Action": "Ir a Evaluación",
     "step2Title": "Inicia la Evaluación",
     "step2Desc": "Después de seleccionar los frameworks, haz clic en \"Iniciar Evaluación\" para comenzar a responder las preguntas filtradas.",
-    "step3Title": "Genera Datos Demo",
-    "step3Desc": "Haz clic en el botón \"Datos Demo\" para rellenar automáticamente respuestas de ejemplo y ver la herramienta en acción.",
+    "step3Title": "Configurar frameworks",
+    "step3Desc": "Define frameworks y parametros de evaluacion para tu organizacion.",
     "step4Title": "Explora los Paneles",
     "step4Desc": "Consulta los paneles Ejecutivo, GRC y Especialista para ver métricas, brechas críticas y hoja de ruta de mejoras.",
     "step4Action": "Ver Paneles",
@@ -1106,7 +1093,120 @@
     "personaGRC": "GRC",
     "personaGRCDesc": "Gerente de Seguridad - Cobertura, evidencias y auditabilidad",
     "personaSpecialist": "Especialista",
-    "personaSpecialistDesc": "Arquitecto / Ingeniero - Detalles técnicos e implementación"
+    "personaSpecialistDesc": "Arquitecto / Ingeniero - Detalles técnicos e implementación",
+    "dashboardLayoutTab": "Dashboards",
+    "dashboardLayoutTitle": "Layouts de Dashboard",
+    "dashboardLayoutDescription": "Personaliza widgets y orden para cada dashboard.",
+    "dashboardLayoutSelect": "Seleccionar dashboard",
+    "dashboardLayoutScope": "Aplica a todos los usuarios",
+    "dashboardLayoutSelected": "Widgets seleccionados",
+    "dashboardLayoutEmpty": "No hay widgets seleccionados",
+    "dashboardLayoutAvailable": "Widgets disponibles",
+    "dashboardLayoutNoAvailable": "Todos los widgets ya fueron agregados",
+    "dashboardLayoutAdd": "Agregar",
+    "dashboardLayoutReset": "Restablecer por defecto",
+    "dashboardLayoutDiscard": "Descartar cambios",
+    "dashboardLayoutSave": "Guardar layout",
+    "dashboardLayoutSaving": "Guardando...",
+    "dashboardLayoutSaved": "Layout del dashboard guardado",
+    "dashboardLayoutSaveError": "Error al guardar el layout del dashboard",
+    "dashboardLayoutDefaultApplied": "Layout por defecto restaurado",
+    "dashboardLayoutDiscarded": "Cambios descartados",
+    "dashboardWidgets": {
+      "executiveHeader": {
+        "label": "Encabezado ejecutivo",
+        "description": "Titulo, selector y acciones de exportacion"
+      },
+      "executiveKpis": {
+        "label": "KPIs ejecutivos",
+        "description": "Score, gaps, cobertura y evidencias"
+      },
+      "executiveIndicators": {
+        "label": "Indicadores de dominio",
+        "description": "Metricas especificas por dominio"
+      },
+      "executiveCharts": {
+        "label": "Graficos ejecutivos",
+        "description": "Radar, barras y distribucion de riesgos"
+      },
+      "executiveFrameworkCoverage": {
+        "label": "Cobertura por framework",
+        "description": "Cobertura por framework"
+      },
+      "executiveFrameworkCategories": {
+        "label": "Madurez por categoria",
+        "description": "Grilla de score por categoria"
+      },
+      "executiveRoadmap": {
+        "label": "Roadmap estrategico",
+        "description": "Prioridades de 90 dias"
+      },
+      "executiveCriticalGaps": {
+        "label": "Lista de gaps criticos",
+        "description": "Resumen de gaps filtrados"
+      },
+      "grcHeader": {
+        "label": "Encabezado GRC",
+        "description": "Titulo, selector y acciones de exportacion"
+      },
+      "grcStatusPills": {
+        "label": "Filtros de estado",
+        "description": "Pills de estado rapido"
+      },
+      "grcKpis": {
+        "label": "KPIs GRC",
+        "description": "Cobertura, evidencias, score y gaps"
+      },
+      "grcFrameworkCoverage": {
+        "label": "Cobertura de frameworks",
+        "description": "Detalle de madurez y cobertura"
+      },
+      "grcIndicators": {
+        "label": "Indicadores de dominio",
+        "description": "Metricas especificas por dominio"
+      },
+      "grcRoadmap": {
+        "label": "Roadmap estrategico",
+        "description": "Acciones prioritarias"
+      },
+      "grcTabs": {
+        "label": "Pestanas detalladas GRC",
+        "description": "Dominios, frameworks, gaps y ownership"
+      },
+      "specialistHeader": {
+        "label": "Encabezado especialista",
+        "description": "Titulo, selector y acciones de exportacion"
+      },
+      "specialistFilters": {
+        "label": "Filtros rapidos",
+        "description": "Filtros de criticidad y respuestas"
+      },
+      "specialistKpis": {
+        "label": "KPIs especialista",
+        "description": "Preguntas, cobertura, faltas y parciales"
+      },
+      "specialistIndicators": {
+        "label": "Indicadores de dominio",
+        "description": "Metricas especificas por dominio"
+      },
+      "specialistRoadmap": {
+        "label": "Roadmap tecnico",
+        "description": "Prioridades por ventana"
+      },
+      "specialistTabs": {
+        "label": "Pestanas detalladas especialista",
+        "description": "Gaps, heatmap, dominios y frameworks"
+      },
+      "periodComparison": {
+        "label": "Comparacion de periodo",
+        "description": "Comparar periodo actual vs anterior"
+      },
+      "maturityTrend": {
+        "label": "Tendencia de madurez",
+        "description": "Historico y proyecciones"
+      }
+    }
+
   },
   "domainFunctions": {
     "aiGovern": "Gobernar",
@@ -1165,7 +1265,8 @@
       "framework": "Framework",
       "question": "Pregunta",
       "setting": "Configuración",
-      "answer": "Respuesta"
+      "answer": "Respuesta",
+      "catalog": "Catalogo"
     },
     "device": {
       "all": "Todos los Dispositivos",
@@ -1213,6 +1314,8 @@
     "authentication": "Autenticación",
     "headerName": "Nombre del Header",
     "tokenValue": "Valor del Token",
+    "secretReferenceHint": "Usa env:NOMBRE, file:/ruta o secret:ref para referenciar secretos.",
+    "secretReferenceRequired": "Usa env:NOMBRE, file:/ruta o secret:ref para secretos.",
     "dataToInclude": "Datos a Incluir",
     "includeIp": "Dirección IP",
     "includeGeo": "Geolocalización",
@@ -1238,7 +1341,8 @@
     "testSuccess": "Prueba enviada con éxito",
     "testError": "Prueba de integración fallida",
     "validation": {
-      "required": "Nombre y endpoint son obligatorios"
+      "required": "Nombre y endpoint son obligatorios",
+      "authRequired": "El valor de autenticacion es obligatorio para este tipo."
     }
   },
   "siemHealth": {
@@ -1347,6 +1451,8 @@
     "maxTokens": "Max Tokens",
     "systemPrompt": "System Prompt Personalizado",
     "keepCurrentKey": "Deje en blanco para mantener la clave actual",
+    "secretReferenceHint": "Usa env:NOMBRE, file:/ruta o secret:ref para referenciar secretos.",
+    "secretReferenceRequired": "Usa env:NOMBRE, file:/ruta o secret:ref para secretos.",
     "providerUpdated": "Proveedor actualizado",
     "providerAdded": "Proveedor agregado",
     "providerRemoved": "Proveedor eliminado",
@@ -1422,11 +1528,6 @@
     "export": {
       "title": "Exportar Datos",
       "description": "Exportar respuestas y configuraciones a Excel",
-      "section": "Exportar y Respaldo"
-    },
-    "demoData": {
-      "title": "Datos de Demostración",
-      "description": "Generar datos de ejemplo para explorar los dashboards",
       "section": "Exportar y Respaldo"
     },
     "clearAnswers": {

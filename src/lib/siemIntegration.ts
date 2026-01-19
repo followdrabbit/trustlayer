@@ -52,7 +52,7 @@ function mapIntegration(row: Record<string, unknown>): SIEMIntegration {
     format: row.format as SIEMIntegration['format'],
     authType: row.auth_type as SIEMIntegration['authType'],
     authHeader: row.auth_header as string | null,
-    authValueEncrypted: row.auth_value_encrypted as string | null,
+    authValueEncrypted: (row.auth_value_encrypted as string | null) ?? null,
     isEnabled: row.is_enabled as boolean,
     includeIp: row.include_ip as boolean,
     includeGeo: row.include_geo as boolean,
@@ -75,7 +75,9 @@ function mapIntegration(row: Record<string, unknown>): SIEMIntegration {
 export async function getSIEMIntegrations(): Promise<SIEMIntegration[]> {
   const { data, error } = await supabase
     .from('siem_integrations')
-    .select('*')
+    .select(
+      'id, user_id, name, endpoint_url, format, auth_type, auth_header, is_enabled, include_ip, include_geo, include_device, severity_filter, entity_filter, action_filter, last_success_at, last_error_at, last_error_message, events_sent, created_at, updated_at'
+    )
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -92,7 +94,9 @@ export async function getSIEMIntegrations(): Promise<SIEMIntegration[]> {
 export async function getSIEMIntegration(id: string): Promise<SIEMIntegration | null> {
   const { data, error } = await supabase
     .from('siem_integrations')
-    .select('*')
+    .select(
+      'id, user_id, name, endpoint_url, format, auth_type, auth_header, is_enabled, include_ip, include_geo, include_device, severity_filter, entity_filter, action_filter, last_success_at, last_error_at, last_error_message, events_sent, created_at, updated_at'
+    )
     .eq('id', id)
     .single();
 
@@ -125,7 +129,7 @@ export async function createSIEMIntegration(
       format: input.format,
       auth_type: input.authType,
       auth_header: input.authHeader || null,
-      auth_value_encrypted: input.authValue || null, // In production, encrypt this
+      auth_value_encrypted: input.authValue?.trim() ? input.authValue.trim() : null,
       include_ip: input.includeIp ?? true,
       include_geo: input.includeGeo ?? true,
       include_device: input.includeDevice ?? true,
@@ -155,9 +159,19 @@ export async function updateSIEMIntegration(
   if (input.name !== undefined) updateData.name = input.name;
   if (input.endpointUrl !== undefined) updateData.endpoint_url = input.endpointUrl;
   if (input.format !== undefined) updateData.format = input.format;
-  if (input.authType !== undefined) updateData.auth_type = input.authType;
+  if (input.authType !== undefined) {
+    updateData.auth_type = input.authType;
+    if (input.authType === 'none') {
+      updateData.auth_value_encrypted = null;
+    }
+  }
   if (input.authHeader !== undefined) updateData.auth_header = input.authHeader;
-  if (input.authValue !== undefined) updateData.auth_value_encrypted = input.authValue;
+  if (input.authValue !== undefined) {
+    const trimmed = input.authValue.trim();
+    if (trimmed) {
+      updateData.auth_value_encrypted = trimmed;
+    }
+  }
   if (input.isEnabled !== undefined) updateData.is_enabled = input.isEnabled;
   if (input.includeIp !== undefined) updateData.include_ip = input.includeIp;
   if (input.includeGeo !== undefined) updateData.include_geo = input.includeGeo;
@@ -214,8 +228,8 @@ export async function testSIEMIntegration(id: string): Promise<{ success: boolea
       body: {
         event: {
           id: 0,
-          entityType: 'test',
-          entityId: 'test-event',
+          entityType: 'setting',
+          entityId: 'siem-test',
           action: 'create',
           changes: { test: true },
           userId: (await supabase.auth.getUser()).data.user?.id,

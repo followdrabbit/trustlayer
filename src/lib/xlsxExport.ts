@@ -1,6 +1,6 @@
 import ExcelJS from 'exceljs';
 import { Answer } from './database';
-import { domains, subcategories, questions } from './dataset';
+import { domains, subcategories, questions, loadCatalogFromDatabase } from './dataset';
 import { calculateOverallMetrics } from './scoring';
 
 const SCHEMA_VERSION = '1.0.0';
@@ -24,6 +24,7 @@ interface ExportSummary {
 }
 
 export async function exportAnswersToXLSX(answersMap: Map<string, Answer>): Promise<Blob> {
+  await loadCatalogFromDatabase();
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'AI Security Assessment';
   workbook.created = new Date();

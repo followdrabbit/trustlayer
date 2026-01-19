@@ -5,11 +5,36 @@
  * including taxonomy (domains, subcategories), frameworks, and questions.
  */
 
+import ExcelJS from 'exceljs';
 import { supabase } from '@/integrations/supabase/client';
 import { SecurityDomain } from './securityDomains';
+import { logAuditEvent } from './auditLog';
+import { scanXlsxFile } from './xlsxSecurity';
 
 const SCHEMA_VERSION = '1.0.0';
+const TEMPLATE_VERSION = '1.0.0';
 const CONFIG_TYPE = 'SECURITY_DOMAIN_CONFIG';
+const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const JSON_MIME_TYPE = 'application/json';
+const MAX_IMPORT_FILE_BYTES = Number.parseInt(
+  import.meta.env.VITE_IMPORT_MAX_FILE_BYTES || '',
+  10
+) || 5 * 1024 * 1024;
+const MAX_IMPORT_CELL_CHARS = Number.parseInt(
+  import.meta.env.VITE_IMPORT_MAX_CELL_CHARS || '',
+  10
+) || 2000;
+const ALLOWED_IMPORT_EXTENSIONS = ['.json', '.xlsx'];
+const XLSX_SHEET_LIMITS = {
+  metadata: 5,
+  securityDomain: 5,
+  taxonomyDomains: 200,
+  subcategories: 2000,
+  frameworks: 500,
+  questions: 5000,
+};
+const PREVIEW_SAMPLE_LIMIT = 3;
+const PREVIEW_WARNING_LIMIT = 5;
 
 // Export interfaces
 export interface DomainConfigExport {
@@ -22,6 +47,7 @@ export interface DomainConfigExport {
 
 export interface DomainConfigMetadata {
   schemaVersion: string;
+  templateVersion?: string;
   configType: string;
   exportedAt: string;
   sourceDomainId: string;
@@ -113,6 +139,22 @@ export interface ValidationResult {
   errors: string[];
   warnings: string[];
   config: DomainConfigExport | null;
+  preview?: DomainImportPreview | null;
+}
+
+export interface DomainImportPreviewItem {
+  id: string;
+  label: string;
+}
+
+export interface DomainImportPreview {
+  samples: {
+    taxonomyDomains: DomainImportPreviewItem[];
+    subcategories: DomainImportPreviewItem[];
+    frameworks: DomainImportPreviewItem[];
+    questions: DomainImportPreviewItem[];
+  };
+  warnings: string[];
 }
 
 /**
@@ -318,87 +360,793 @@ export function downloadDomainConfig(config: DomainConfigExport): void {
   URL.revokeObjectURL(url);
 }
 
-/**
- * Validate an import file
- */
-export function validateImportFile(file: File): Promise<ValidationResult> {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
+async function generateDomainConfigTemplate(): Promise<Blob> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'TrustLayer';
+  workbook.created = new Date();
 
-    reader.onload = (e) => {
-      try {
-        const content = e.target?.result as string;
-        const config = JSON.parse(content) as DomainConfigExport;
+  const metadataSheet = workbook.addWorksheet('Metadata');
+  metadataSheet.columns = [
+    { header: 'schemaVersion', key: 'schemaVersion', width: 15 },
+    { header: 'templateVersion', key: 'templateVersion', width: 15 },
+    { header: 'configType', key: 'configType', width: 25 },
+    { header: 'exportedAt', key: 'exportedAt', width: 25 },
+    { header: 'sourceDomainId', key: 'sourceDomainId', width: 20 },
+    { header: 'sourceDomainName', key: 'sourceDomainName', width: 30 },
+  ];
+  metadataSheet.addRow({
+    schemaVersion: SCHEMA_VERSION,
+    templateVersion: TEMPLATE_VERSION,
+    configType: CONFIG_TYPE,
+    exportedAt: new Date().toISOString(),
+    sourceDomainId: 'EXAMPLE_DOMAIN',
+    sourceDomainName: 'Example Domain',
+  });
 
-        const errors: string[] = [];
-        const warnings: string[] = [];
+  const securitySheet = workbook.addWorksheet('SecurityDomain');
+  securitySheet.columns = [
+    { header: 'domainId', key: 'domainId', width: 20 },
+    { header: 'domainName', key: 'domainName', width: 30 },
+    { header: 'shortName', key: 'shortName', width: 20 },
+    { header: 'description', key: 'description', width: 40 },
+    { header: 'color', key: 'color', width: 12 },
+    { header: 'icon', key: 'icon', width: 12 },
+    { header: 'displayOrder', key: 'displayOrder', width: 12 },
+  ];
+  securitySheet.addRow({
+    domainId: 'EXAMPLE_DOMAIN',
+    domainName: 'Example Domain',
+    shortName: 'Example',
+    description: 'Example security domain',
+    color: 'blue',
+    icon: 'shield',
+    displayOrder: 1,
+  });
 
-        // Validate metadata
-        if (!config.metadata) {
-          errors.push('Arquivo não contém metadados válidos');
-        } else {
-          if (config.metadata.configType !== CONFIG_TYPE) {
-            errors.push(`Tipo de configuração inválido: ${config.metadata.configType}`);
-          }
-          if (config.metadata.schemaVersion !== SCHEMA_VERSION) {
-            warnings.push(`Versão do schema (${config.metadata.schemaVersion}) pode não ser totalmente compatível`);
-          }
-        }
+  const taxonomyDomainSheet = workbook.addWorksheet('TaxonomyDomains');
+  taxonomyDomainSheet.columns = [
+    { header: 'domainId', key: 'domainId', width: 20 },
+    { header: 'domainName', key: 'domainName', width: 30 },
+    { header: 'description', key: 'description', width: 40 },
+    { header: 'displayOrder', key: 'displayOrder', width: 12 },
+    { header: 'nistAiRmfFunction', key: 'nistAiRmfFunction', width: 20 },
+    { header: 'bankingRelevance', key: 'bankingRelevance', width: 20 },
+    { header: 'strategicQuestion', key: 'strategicQuestion', width: 40 },
+  ];
+  taxonomyDomainSheet.addRow({
+    domainId: 'EXAMPLE_DOMAIN_GOV',
+    domainName: 'Governance',
+    description: 'Example taxonomy domain',
+    displayOrder: 1,
+    nistAiRmfFunction: 'GOVERN',
+  });
 
-        // Validate security domain
-        if (!config.securityDomain) {
-          errors.push('Arquivo não contém configuração de domínio de segurança');
-        } else {
-          if (!config.securityDomain.domainId || !config.securityDomain.domainName) {
-            errors.push('Domínio de segurança inválido: faltam campos obrigatórios');
-          }
-        }
+  const subcatSheet = workbook.addWorksheet('Subcategories');
+  subcatSheet.columns = [
+    { header: 'subcatId', key: 'subcatId', width: 20 },
+    { header: 'subcatName', key: 'subcatName', width: 30 },
+    { header: 'domainId', key: 'domainId', width: 20 },
+    { header: 'definition', key: 'definition', width: 40 },
+    { header: 'objective', key: 'objective', width: 40 },
+    { header: 'criticality', key: 'criticality', width: 12 },
+    { header: 'ownershipType', key: 'ownershipType', width: 15 },
+    { header: 'riskSummary', key: 'riskSummary', width: 40 },
+    { header: 'securityOutcome', key: 'securityOutcome', width: 40 },
+    { header: 'weight', key: 'weight', width: 10 },
+    { header: 'frameworkRefs', key: 'frameworkRefs', width: 30 },
+  ];
+  subcatSheet.addRow({
+    subcatId: 'EXAMPLE_SUB_001',
+    subcatName: 'Policies',
+    domainId: 'EXAMPLE_DOMAIN_GOV',
+    definition: 'Example definition',
+    objective: 'Example objective',
+    criticality: 'High',
+    ownershipType: 'GRC',
+    riskSummary: 'Example risk summary',
+    securityOutcome: 'Example outcome',
+    weight: 1,
+    frameworkRefs: 'ISO_27001|NIST_CSF',
+  });
 
-        // Validate taxonomy
-        if (!config.taxonomy) {
-          warnings.push('Arquivo não contém taxonomia');
-        }
+  const frameworksSheet = workbook.addWorksheet('Frameworks');
+  frameworksSheet.columns = [
+    { header: 'frameworkId', key: 'frameworkId', width: 20 },
+    { header: 'frameworkName', key: 'frameworkName', width: 30 },
+    { header: 'shortName', key: 'shortName', width: 15 },
+    { header: 'version', key: 'version', width: 10 },
+    { header: 'description', key: 'description', width: 40 },
+    { header: 'category', key: 'category', width: 20 },
+    { header: 'targetAudience', key: 'targetAudience', width: 30 },
+    { header: 'assessmentScope', key: 'assessmentScope', width: 30 },
+    { header: 'referenceLinks', key: 'referenceLinks', width: 40 },
+    { header: 'defaultEnabled', key: 'defaultEnabled', width: 15 },
+  ];
+  frameworksSheet.addRow({
+    frameworkId: 'EXAMPLE_FRAMEWORK',
+    frameworkName: 'Example Framework',
+    shortName: 'EXAMPLE',
+    version: '1.0',
+    category: 'Reference',
+    targetAudience: 'Executive|GRC',
+    assessmentScope: 'Example scope',
+    referenceLinks: 'https://example.com',
+    defaultEnabled: 'true',
+  });
 
-        // Check arrays
-        if (!Array.isArray(config.frameworks)) {
-          config.frameworks = [];
-          warnings.push('Nenhum framework encontrado no arquivo');
-        }
+  const questionsSheet = workbook.addWorksheet('Questions');
+  questionsSheet.columns = [
+    { header: 'questionId', key: 'questionId', width: 20 },
+    { header: 'questionText', key: 'questionText', width: 60 },
+    { header: 'domainId', key: 'domainId', width: 20 },
+    { header: 'subcatId', key: 'subcatId', width: 20 },
+    { header: 'criticality', key: 'criticality', width: 12 },
+    { header: 'ownershipType', key: 'ownershipType', width: 15 },
+    { header: 'riskSummary', key: 'riskSummary', width: 40 },
+    { header: 'expectedEvidence', key: 'expectedEvidence', width: 40 },
+    { header: 'imperativeChecks', key: 'imperativeChecks', width: 40 },
+    { header: 'frameworks', key: 'frameworks', width: 30 },
+  ];
+  questionsSheet.addRow({
+    questionId: 'EXAMPLE_Q_001',
+    questionText: 'Does the organization maintain documented security policies?',
+    domainId: 'EXAMPLE_DOMAIN_GOV',
+    subcatId: 'EXAMPLE_SUB_001',
+    criticality: 'High',
+    ownershipType: 'GRC',
+    riskSummary: 'Missing policies increases compliance risk',
+    expectedEvidence: 'Approved security policy document',
+    imperativeChecks: 'Verify approval date and signatures',
+    frameworks: 'EXAMPLE_FRAMEWORK',
+  });
 
-        if (!Array.isArray(config.questions)) {
-          config.questions = [];
-          warnings.push('Nenhuma pergunta encontrada no arquivo');
-        }
+  const instructionsSheet = workbook.addWorksheet('Instructions');
+  instructionsSheet.columns = [
+    { header: 'Sheet', key: 'Sheet', width: 20 },
+    { header: 'Field', key: 'Field', width: 20 },
+    { header: 'Description', key: 'Description', width: 60 },
+    { header: 'Required', key: 'Required', width: 10 },
+  ];
+  const instructions = [
+    { Sheet: 'Metadata', Field: 'templateVersion', Description: 'Template version for compatibility checks', Required: 'no' },
+    { Sheet: 'SecurityDomain', Field: 'domainId', Description: 'Unique ID for the security domain', Required: 'yes' },
+    { Sheet: 'SecurityDomain', Field: 'domainName', Description: 'Display name for the security domain', Required: 'yes' },
+    { Sheet: 'SecurityDomain', Field: 'shortName', Description: 'Short display name', Required: 'yes' },
+    { Sheet: 'TaxonomyDomains', Field: 'domainId', Description: 'Unique ID for taxonomy domain', Required: 'yes' },
+    { Sheet: 'Subcategories', Field: 'subcatId', Description: 'Unique ID for subcategory', Required: 'yes' },
+    { Sheet: 'Frameworks', Field: 'frameworkId', Description: 'Unique ID for framework', Required: 'yes' },
+    { Sheet: 'Questions', Field: 'questionId', Description: 'Unique ID for question', Required: 'yes' },
+  ];
+  instructions.forEach(row => instructionsSheet.addRow(row));
 
-        resolve({
-          isValid: errors.length === 0,
-          errors,
-          warnings,
-          config: errors.length === 0 ? config : null
-        });
-      } catch (err) {
-        resolve({
-          isValid: false,
-          errors: ['Erro ao processar arquivo: ' + (err as Error).message],
-          warnings: [],
-          config: null
-        });
-      }
+  const buffer = await workbook.xlsx.writeBuffer();
+  return new Blob([buffer], { type: XLSX_MIME_TYPE });
+}
+
+export async function downloadDomainConfigTemplate(): Promise<void> {
+  const blob = await generateDomainConfigTemplate();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'domain-config-template.xlsx';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
+function getFileExtension(filename: string): string {
+  const match = filename.toLowerCase().match(/\.[a-z0-9]+$/);
+  return match ? match[0] : '';
+}
+
+function normalizeText(value: string): string {
+  return value.trim();
+}
+
+function parseList(value: string): string[] | null {
+  if (!value) return null;
+  const parts = value
+    .split(/[|,]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+  return parts.length > 0 ? parts : null;
+}
+
+function parseBoolean(value: string): boolean | null {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  if (['true', 'yes', '1', 'sim'].includes(normalized)) return true;
+  if (['false', 'no', '0', 'nao'].includes(normalized)) return false;
+  return null;
+}
+
+function parseNumber(value: string): number | null {
+  if (!value) return null;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function uniqueValues(values: string[]): string[] {
+  return Array.from(new Set(values.filter(Boolean)));
+}
+
+function findDuplicateValues(values: string[]): string[] {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  values.forEach((value) => {
+    if (!value) return;
+    if (seen.has(value)) {
+      duplicates.add(value);
+    } else {
+      seen.add(value);
+    }
+  });
+  return Array.from(duplicates);
+}
+
+function formatIdList(values: string[], limit = PREVIEW_WARNING_LIMIT): string {
+  const unique = uniqueValues(values);
+  if (unique.length <= limit) {
+    return unique.join(', ');
+  }
+  return `${unique.slice(0, limit).join(', ')} +${unique.length - limit} more`;
+}
+
+function buildPreviewItems<T>(
+  items: T[],
+  getLabel: (item: T) => string,
+  getId: (item: T) => string
+): DomainImportPreviewItem[] {
+  return items.slice(0, PREVIEW_SAMPLE_LIMIT).map((item) => {
+    const label = getLabel(item);
+    const id = getId(item);
+    return {
+      id,
+      label: label || id,
     };
-
-    reader.onerror = () => {
-      resolve({
-        isValid: false,
-        errors: ['Erro ao ler arquivo'],
-        warnings: [],
-        config: null
-      });
-    };
-
-    reader.readAsText(file);
   });
 }
 
+export function buildDomainImportPreview(config: DomainConfigExport): DomainImportPreview {
+  const taxonomyDomains = config.taxonomy?.domains || [];
+  const subcategories = config.taxonomy?.subcategories || [];
+  const frameworks = config.frameworks || [];
+  const questions = config.questions || [];
+
+  const taxonomyIds = taxonomyDomains.map((d) => d.domainId).filter(Boolean);
+  const subcatIds = subcategories.map((s) => s.subcatId).filter(Boolean);
+  const frameworkIds = frameworks.map((f) => f.frameworkId).filter(Boolean);
+  const questionIds = questions.map((q) => q.questionId).filter(Boolean);
+
+  const warnings: string[] = [];
+
+  const duplicateTaxonomyIds = findDuplicateValues(taxonomyIds);
+  if (duplicateTaxonomyIds.length > 0) {
+    warnings.push(`Duplicate taxonomy domain IDs: ${formatIdList(duplicateTaxonomyIds)}`);
+  }
+
+  const duplicateSubcatIds = findDuplicateValues(subcatIds);
+  if (duplicateSubcatIds.length > 0) {
+    warnings.push(`Duplicate subcategory IDs: ${formatIdList(duplicateSubcatIds)}`);
+  }
+
+  const duplicateFrameworkIds = findDuplicateValues(frameworkIds);
+  if (duplicateFrameworkIds.length > 0) {
+    warnings.push(`Duplicate framework IDs: ${formatIdList(duplicateFrameworkIds)}`);
+  }
+
+  const duplicateQuestionIds = findDuplicateValues(questionIds);
+  if (duplicateQuestionIds.length > 0) {
+    warnings.push(`Duplicate question IDs: ${formatIdList(duplicateQuestionIds)}`);
+  }
+
+  const taxonomyIdSet = new Set(taxonomyIds);
+  const missingTaxonomyForSubcats = uniqueValues(
+    subcategories
+      .map((s) => s.domainId)
+      .filter((id) => id && !taxonomyIdSet.has(id))
+  );
+  if (missingTaxonomyForSubcats.length > 0) {
+    warnings.push(`Subcategories reference missing taxonomy domains: ${formatIdList(missingTaxonomyForSubcats)}`);
+  }
+
+  const missingQuestionDomains = uniqueValues(
+    questions
+      .map((q) => q.domainId)
+      .filter((id) => id && !taxonomyIdSet.has(id))
+  );
+  if (missingQuestionDomains.length > 0) {
+    warnings.push(`Questions reference missing taxonomy domains: ${formatIdList(missingQuestionDomains)}`);
+  }
+
+  const subcatIdSet = new Set(subcatIds);
+  const missingQuestionSubcats = uniqueValues(
+    questions
+      .map((q) => q.subcatId || '')
+      .filter((id) => id && !subcatIdSet.has(id))
+  );
+  if (missingQuestionSubcats.length > 0) {
+    warnings.push(`Questions reference missing subcategories: ${formatIdList(missingQuestionSubcats)}`);
+  }
+
+  const frameworkIdSet = new Set(frameworkIds);
+  const missingFrameworkRefs = uniqueValues(
+    questions
+      .flatMap((q) => q.frameworks || [])
+      .filter((id) => id && !frameworkIdSet.has(id))
+  );
+  if (missingFrameworkRefs.length > 0) {
+    warnings.push(`Questions reference missing frameworks: ${formatIdList(missingFrameworkRefs)}`);
+  }
+
+  return {
+    samples: {
+      taxonomyDomains: buildPreviewItems(
+        taxonomyDomains,
+        (item) => item.domainName,
+        (item) => item.domainId
+      ),
+      subcategories: buildPreviewItems(
+        subcategories,
+        (item) => item.subcatName,
+        (item) => item.subcatId
+      ),
+      frameworks: buildPreviewItems(
+        frameworks,
+        (item) => item.frameworkName,
+        (item) => item.frameworkId
+      ),
+      questions: buildPreviewItems(
+        questions,
+        (item) => item.questionText,
+        (item) => item.questionId
+      ),
+    },
+    warnings,
+  };
+}
+
+async function readWorkbookFromFile(file: File): Promise<ExcelJS.Workbook> {
+  const rawData = typeof file.arrayBuffer === 'function'
+    ? await file.arrayBuffer()
+    : await new Response(file).arrayBuffer();
+  const data = rawData instanceof ArrayBuffer
+    ? rawData
+    : rawData instanceof Uint8Array
+      ? rawData
+      : new Uint8Array(rawData as ArrayBuffer);
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(data);
+  return workbook;
+}
+
+function getHeaders(worksheet: ExcelJS.Worksheet): string[] {
+  const headers: string[] = [];
+  const headerRow = worksheet.getRow(1);
+  headerRow.eachCell((cell, colNumber) => {
+    headers[colNumber - 1] = normalizeText(cell.text || '');
+  });
+  return headers;
+}
+
+function readSheetRecords(
+  worksheet: ExcelJS.Worksheet | undefined,
+  sheetName: string,
+  requiredColumns: string[],
+  maxRows: number
+): { records: Record<string, string>[]; errors: string[]; warnings: string[] } {
+  const records: Record<string, string>[] = [];
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!worksheet) {
+    errors.push(`Missing sheet: ${sheetName}`);
+    return { records, errors, warnings };
+  }
+
+  const totalRows = worksheet.actualRowCount || worksheet.rowCount;
+  const dataRows = Math.max(0, totalRows - 1);
+  if (dataRows > maxRows) {
+    errors.push(`Sheet ${sheetName} exceeds max rows (${dataRows}/${maxRows})`);
+  }
+
+  const headers = getHeaders(worksheet);
+  const headerMap = new Map<string, string>();
+  headers.forEach((header) => {
+    if (header) headerMap.set(header.toLowerCase(), header);
+  });
+
+  requiredColumns.forEach((col) => {
+    if (!headerMap.has(col.toLowerCase())) {
+      errors.push(`Missing column "${col}" in ${sheetName}`);
+    }
+  });
+
+  for (let rowNumber = 2; rowNumber <= totalRows; rowNumber++) {
+    const row = worksheet.getRow(rowNumber);
+    const record: Record<string, string> = {};
+    let hasValue = false;
+
+    headers.forEach((header, index) => {
+      if (!header) return;
+      const cell = row.getCell(index + 1);
+      const cellValue = cell.value as { formula?: string } | null;
+      if (cellValue && typeof cellValue === 'object' && 'formula' in cellValue) {
+        errors.push(`Formula not allowed in ${sheetName} row ${rowNumber}`);
+      }
+      const text = normalizeText(cell.text || '');
+      if (text.length > MAX_IMPORT_CELL_CHARS) {
+        errors.push(`Cell too long in ${sheetName} row ${rowNumber}`);
+      }
+      if (text) {
+        hasValue = true;
+      }
+      record[header] = text;
+    });
+
+    if (hasValue) {
+      records.push(record);
+    }
+  }
+
+  if (records.length === 0) {
+    warnings.push(`No data found in ${sheetName}`);
+  }
+
+  return { records, errors, warnings };
+}
+
+function validateDomainConfig(config: DomainConfigExport): { errors: string[]; warnings: string[] } {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!config.metadata) {
+    errors.push('Missing metadata');
+  } else {
+    if (config.metadata.configType !== CONFIG_TYPE) {
+      errors.push(`Invalid config type: ${config.metadata.configType}`);
+    }
+    if (config.metadata.schemaVersion !== SCHEMA_VERSION) {
+      warnings.push(`Schema version mismatch: ${config.metadata.schemaVersion}`);
+    }
+    if (config.metadata.templateVersion && config.metadata.templateVersion !== TEMPLATE_VERSION) {
+      warnings.push(`Template version mismatch: ${config.metadata.templateVersion}`);
+    }
+  }
+
+  if (!config.securityDomain) {
+    errors.push('Missing security domain');
+  } else {
+    if (!config.securityDomain.domainId || !config.securityDomain.domainName || !config.securityDomain.shortName) {
+      errors.push('Security domain missing required fields');
+    }
+  }
+
+  if (!config.taxonomy) {
+    warnings.push('Missing taxonomy');
+  }
+
+  if (!Array.isArray(config.frameworks)) {
+    config.frameworks = [];
+    warnings.push('No frameworks found');
+  }
+
+  if (!Array.isArray(config.questions)) {
+    config.questions = [];
+    warnings.push('No questions found');
+  }
+
+  return { errors, warnings };
+}
+
+async function parseDomainConfigFromJson(file: File): Promise<{
+  config: DomainConfigExport | null;
+  errors: string[];
+  warnings: string[];
+}> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  try {
+    const content = await file.text();
+    const config = JSON.parse(content) as DomainConfigExport;
+    const validation = validateDomainConfig(config);
+    errors.push(...validation.errors);
+    warnings.push(...validation.warnings);
+    return {
+      config: validation.errors.length === 0 ? config : null,
+      errors,
+      warnings,
+    };
+  } catch (err) {
+    return {
+      config: null,
+      errors: ['Failed to parse JSON: ' + (err as Error).message],
+      warnings,
+    };
+  }
+}
+
+async function parseDomainConfigFromXlsx(file: File): Promise<{
+  config: DomainConfigExport | null;
+  errors: string[];
+  warnings: string[];
+}> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  try {
+    const workbook = await readWorkbookFromFile(file);
+
+    const metadataResult = readSheetRecords(
+      workbook.getWorksheet('Metadata'),
+      'Metadata',
+      ['schemaVersion', 'configType', 'exportedAt', 'sourceDomainId', 'sourceDomainName'],
+      XLSX_SHEET_LIMITS.metadata
+    );
+    const securityResult = readSheetRecords(
+      workbook.getWorksheet('SecurityDomain'),
+      'SecurityDomain',
+      ['domainId', 'domainName', 'shortName'],
+      XLSX_SHEET_LIMITS.securityDomain
+    );
+    const taxonomyResult = readSheetRecords(
+      workbook.getWorksheet('TaxonomyDomains'),
+      'TaxonomyDomains',
+      ['domainId', 'domainName'],
+      XLSX_SHEET_LIMITS.taxonomyDomains
+    );
+    const subcategoryResult = readSheetRecords(
+      workbook.getWorksheet('Subcategories'),
+      'Subcategories',
+      ['subcatId', 'subcatName', 'domainId'],
+      XLSX_SHEET_LIMITS.subcategories
+    );
+    const frameworkResult = readSheetRecords(
+      workbook.getWorksheet('Frameworks'),
+      'Frameworks',
+      ['frameworkId', 'frameworkName', 'shortName'],
+      XLSX_SHEET_LIMITS.frameworks
+    );
+    const questionResult = readSheetRecords(
+      workbook.getWorksheet('Questions'),
+      'Questions',
+      ['questionId', 'questionText', 'domainId'],
+      XLSX_SHEET_LIMITS.questions
+    );
+
+    errors.push(
+      ...metadataResult.errors,
+      ...securityResult.errors,
+      ...taxonomyResult.errors,
+      ...subcategoryResult.errors,
+      ...frameworkResult.errors,
+      ...questionResult.errors
+    );
+    warnings.push(
+      ...metadataResult.warnings,
+      ...securityResult.warnings,
+      ...taxonomyResult.warnings,
+      ...subcategoryResult.warnings,
+      ...frameworkResult.warnings,
+      ...questionResult.warnings
+    );
+
+    const securityRow = securityResult.records[0];
+    if (!securityRow) {
+      errors.push('SecurityDomain sheet is required');
+      return { config: null, errors, warnings };
+    }
+
+    const securityDomain: SecurityDomainConfig = {
+      domainId: securityRow.domainId || '',
+      domainName: securityRow.domainName || '',
+      shortName: securityRow.shortName || '',
+      description: securityRow.description || '',
+      color: securityRow.color || 'blue',
+      icon: securityRow.icon || 'shield',
+      displayOrder: parseNumber(securityRow.displayOrder || '') || 1,
+    };
+
+    const metadataRow = metadataResult.records[0];
+    if (!metadataRow) {
+      warnings.push('Metadata sheet missing; defaults applied');
+    }
+
+    const metadata: DomainConfigMetadata = {
+      schemaVersion: metadataRow?.schemaVersion || SCHEMA_VERSION,
+      templateVersion: metadataRow?.templateVersion || undefined,
+      configType: metadataRow?.configType || CONFIG_TYPE,
+      exportedAt: metadataRow?.exportedAt || new Date().toISOString(),
+      sourceDomainId: metadataRow?.sourceDomainId || securityDomain.domainId,
+      sourceDomainName: metadataRow?.sourceDomainName || securityDomain.domainName,
+    };
+
+    const taxonomyDomains: TaxonomyDomainConfig[] = [];
+    taxonomyResult.records.forEach((row) => {
+      if (!row.domainId || !row.domainName) {
+        warnings.push('Skipping taxonomy domain with missing fields');
+        return;
+      }
+      taxonomyDomains.push({
+        domainId: row.domainId,
+        domainName: row.domainName,
+        description: row.description || null,
+        displayOrder: parseNumber(row.displayOrder || ''),
+        nistAiRmfFunction: row.nistAiRmfFunction || null,
+        bankingRelevance: row.bankingRelevance || null,
+        strategicQuestion: row.strategicQuestion || null,
+      });
+    });
+
+    const subcategories: TaxonomySubcategoryConfig[] = [];
+    subcategoryResult.records.forEach((row) => {
+      if (!row.subcatId || !row.subcatName || !row.domainId) {
+        warnings.push('Skipping subcategory with missing fields');
+        return;
+      }
+      subcategories.push({
+        subcatId: row.subcatId,
+        subcatName: row.subcatName,
+        domainId: row.domainId,
+        definition: row.definition || null,
+        objective: row.objective || null,
+        criticality: row.criticality || null,
+        ownershipType: row.ownershipType || null,
+        riskSummary: row.riskSummary || null,
+        securityOutcome: row.securityOutcome || null,
+        weight: parseNumber(row.weight || ''),
+        frameworkRefs: parseList(row.frameworkRefs || ''),
+      });
+    });
+
+    const frameworks: FrameworkConfig[] = [];
+    frameworkResult.records.forEach((row) => {
+      if (!row.frameworkId || !row.frameworkName || !row.shortName) {
+        warnings.push('Skipping framework with missing fields');
+        return;
+      }
+      frameworks.push({
+        frameworkId: row.frameworkId,
+        frameworkName: row.frameworkName,
+        shortName: row.shortName,
+        version: row.version || null,
+        description: row.description || null,
+        category: row.category || null,
+        targetAudience: parseList(row.targetAudience || ''),
+        assessmentScope: row.assessmentScope || null,
+        referenceLinks: parseList(row.referenceLinks || ''),
+        defaultEnabled: parseBoolean(row.defaultEnabled || ''),
+      });
+    });
+
+    const questions: QuestionConfig[] = [];
+    questionResult.records.forEach((row) => {
+      if (!row.questionId || !row.questionText || !row.domainId) {
+        warnings.push('Skipping question with missing fields');
+        return;
+      }
+      questions.push({
+        questionId: row.questionId,
+        questionText: row.questionText,
+        domainId: row.domainId,
+        subcatId: row.subcatId || null,
+        criticality: row.criticality || null,
+        ownershipType: row.ownershipType || null,
+        riskSummary: row.riskSummary || null,
+        expectedEvidence: row.expectedEvidence || null,
+        imperativeChecks: row.imperativeChecks || null,
+        frameworks: parseList(row.frameworks || ''),
+      });
+    });
+
+    const config: DomainConfigExport = {
+      metadata,
+      securityDomain,
+      taxonomy: {
+        domains: taxonomyDomains,
+        subcategories,
+      },
+      frameworks,
+      questions,
+    };
+
+    const validation = validateDomainConfig(config);
+    errors.push(...validation.errors);
+    warnings.push(...validation.warnings);
+
+    return {
+      config: validation.errors.length === 0 ? config : null,
+      errors,
+      warnings,
+    };
+  } catch (err) {
+    return {
+      config: null,
+      errors: ['Failed to read XLSX: ' + (err as Error).message],
+      warnings,
+    };
+  }
+}
+
+/**
+ * Validate an import file
+ */
+export async function validateImportFile(file: File): Promise<ValidationResult> {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  if (!file) {
+    return {
+      isValid: false,
+      errors: ['No file selected'],
+      warnings: [],
+      config: null,
+    };
+  }
+
+  if (file.size > MAX_IMPORT_FILE_BYTES) {
+    errors.push(`File too large. Max ${(MAX_IMPORT_FILE_BYTES / (1024 * 1024)).toFixed(1)}MB`);
+  }
+
+  const extension = getFileExtension(file.name);
+  if (!ALLOWED_IMPORT_EXTENSIONS.includes(extension)) {
+    errors.push('Unsupported file type. Use .json or .xlsx');
+  }
+
+    if (extension === '.xlsx' && file.type && file.type !== XLSX_MIME_TYPE) {
+    warnings.push('Unexpected MIME type for XLSX file');
+  }
+
+  if (extension === '.json' && file.type && file.type !== JSON_MIME_TYPE) {
+    warnings.push('Unexpected MIME type for JSON file');
+  }
+
+  if (errors.length > 0) {
+    return {
+      isValid: false,
+      errors,
+      warnings,
+      config: null,
+    };
+  }
+
+  if (extension === '.xlsx') {
+    const scan = await scanXlsxFile(file);
+    warnings.push(...scan.warnings);
+    if (scan.errors.length > 0) {
+      return {
+        isValid: false,
+        errors: scan.errors,
+        warnings,
+        config: null,
+      };
+    }
+  }
+
+  const result = extension === '.xlsx'
+    ? await parseDomainConfigFromXlsx(file)
+    : await parseDomainConfigFromJson(file);
+
+  warnings.push(...result.warnings);
+
+  let preview: DomainImportPreview | null = null;
+  if (result.config && result.errors.length === 0) {
+    preview = buildDomainImportPreview(result.config);
+    warnings.push(...preview.warnings);
+  }
+
+  const uniqueWarnings = Array.from(new Set(warnings));
+
+  return {
+    isValid: result.errors.length === 0,
+    errors: result.errors,
+    warnings: uniqueWarnings,
+    config: result.errors.length === 0 ? result.config : null,
+    preview,
+  };
+}
 /**
  * Generate a unique domain ID for import
  */
@@ -601,6 +1349,24 @@ export async function importDomainConfig(
     }
 
     result.success = true;
+
+    try {
+      await logAuditEvent({
+        entityType: 'catalog',
+        entityId: result.domainId || newDomainId,
+        action: 'create',
+        changes: {
+          domainId: result.domainId || newDomainId,
+          taxonomyDomains: result.stats.taxonomyDomains,
+          subcategories: result.stats.subcategories,
+          frameworks: result.stats.frameworks,
+          questions: result.stats.questions,
+        },
+      });
+    } catch (error) {
+      console.warn('Failed to log catalog import:', error);
+    }
+
     return result;
   } catch (error) {
     result.errors.push(`Erro durante importação: ${(error as Error).message}`);

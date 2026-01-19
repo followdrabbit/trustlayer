@@ -3,6 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDashboardMetrics } from './useDashboardMetrics';
 import { useAnswersStore } from '@/lib/stores';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canEditAssessments } from '@/lib/roles';
 import { toast } from 'sonner';
 import { downloadHtmlReport } from '@/lib/htmlReportExport';
 import { exportAnswersToXLSX, downloadXLSX } from '@/lib/xlsxExport';
@@ -27,6 +29,14 @@ export function useVoiceCommands() {
   const { t } = useTranslation();
   const { criticalGaps, metrics, currentDomainInfo, enabledFrameworks, selectedFrameworkIds, frameworkCoverage, roadmap, answers } = useDashboardMetrics();
   const setSelectedSecurityDomain = useAnswersStore(state => state.setSelectedSecurityDomain);
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
+
+  const ensureCanChangeDomain = useCallback(() => {
+    if (canEdit) return true;
+    toast.error(t('voiceCommands.readOnly', 'Somente leitura. O dominio nao pode ser alterado.'));
+    return false;
+  }, [canEdit, t]);
 
   // Generate summary text for the current security posture
   const generatePostureSummary = useCallback(() => {
@@ -216,6 +226,7 @@ export function useVoiceCommands() {
         /change\s*(to)?\s*ai\s*(domain)?/i,
       ],
       action: async () => {
+        if (!ensureCanChangeDomain()) return;
         await setSelectedSecurityDomain('ai-security');
         toast.success(t('voiceCommands.domainChanged', 'Domínio alterado para AI Security'));
       },
@@ -235,6 +246,7 @@ export function useVoiceCommands() {
         /change\s*(to)?\s*cloud\s*(domain)?/i,
       ],
       action: async () => {
+        if (!ensureCanChangeDomain()) return;
         await setSelectedSecurityDomain('cloud-security');
         toast.success(t('voiceCommands.domainChanged', 'Domínio alterado para Cloud Security'));
       },
@@ -254,6 +266,7 @@ export function useVoiceCommands() {
         /change\s*(to)?\s*devsecops\s*(domain)?/i,
       ],
       action: async () => {
+        if (!ensureCanChangeDomain()) return;
         await setSelectedSecurityDomain('devsecops');
         toast.success(t('voiceCommands.domainChanged', 'Domínio alterado para DevSecOps'));
       },
@@ -294,7 +307,7 @@ export function useVoiceCommands() {
       description: t('voiceCommands.exportExcel', 'Exportar Relatório Excel'),
       category: 'ui',
     },
-  ], [navigate, t, setSelectedSecurityDomain, handleExportHtmlReport, handleExportExcelReport]);
+  ], [navigate, t, setSelectedSecurityDomain, handleExportHtmlReport, handleExportExcelReport, ensureCanChangeDomain]);
 
   // Data commands that return text instead of navigating
   const dataCommands = useMemo(() => [
@@ -434,3 +447,4 @@ export function useVoiceCommands() {
     dataCommands,
   };
 }
+

@@ -1,11 +1,13 @@
 import { useMemo, useEffect, useState, useCallback, useRef } from 'react';
 import { useAnswersStore } from '@/lib/stores';
 import { calculateOverallMetrics, getCriticalGaps, getFrameworkCoverage, generateRoadmap, ActiveQuestion, OverallMetrics, CriticalGap, FrameworkCoverage, RoadmapItem } from '@/lib/scoring';
-import { questions as defaultQuestions } from '@/lib/dataset';
+import { questions as defaultQuestions, loadCatalogFromDatabase } from '@/lib/dataset';
 import { getAllCustomQuestions, getDisabledQuestions, getEnabledFrameworks, getSelectedFrameworks, setSelectedFrameworks, getAllCustomFrameworks, Answer } from '@/lib/database';
-import { frameworks as defaultFrameworks, Framework, getQuestionFrameworkIds, getFrameworksBySecurityDomain } from '@/lib/frameworks';
+import { frameworks as defaultFrameworks, Framework, getQuestionFrameworkIds, getFrameworksBySecurityDomain, loadFrameworksFromDatabase } from '@/lib/frameworks';
 import { getSecurityDomainById, DEFAULT_SECURITY_DOMAINS, SecurityDomain } from '@/lib/securityDomains';
 import { useMaturitySnapshots } from '@/hooks/useMaturitySnapshots';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canEditAssessments } from '@/lib/roles';
 
 // Minimum interval between visibility-triggered reloads (30 seconds)
 const MIN_RELOAD_INTERVAL = 30000;
@@ -58,6 +60,8 @@ export interface DashboardMetricsResult {
  */
 export function useDashboardMetrics(): DashboardMetricsResult {
   const { answers, isLoading, selectedSecurityDomain } = useAnswersStore();
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
   
   // Initialize snapshot capturing
   useMaturitySnapshots();
@@ -87,7 +91,18 @@ export function useDashboardMetrics(): DashboardMetricsResult {
       const domainInfo = await getSecurityDomainById(selectedSecurityDomain);
       setCurrentDomainInfo(domainInfo || DEFAULT_SECURITY_DOMAINS.find(d => d.domainId === selectedSecurityDomain) || null);
 
-      const [customQuestions, disabledQuestionIds, enabledIds, selectedIds, customFrameworks] = await Promise.all([
+      await Promise.all([
+        loadCatalogFromDatabase(),
+        loadFrameworksFromDatabase(),
+      ]);
+
+      const [
+        customQuestions,
+        disabledQuestionIds,
+        enabledIds,
+        selectedIds,
+        customFrameworks,
+      ] = await Promise.all([
         getAllCustomQuestions(),
         getDisabledQuestions(),
         getEnabledFrameworks(),
@@ -235,13 +250,14 @@ export function useDashboardMetrics(): DashboardMetricsResult {
 
   // Handle framework selection change
   const handleFrameworkSelectionChange = useCallback(async (frameworkIds: string[]) => {
+    if (!canEdit) return;
     setSelectedFrameworkIds(frameworkIds);
     try {
       await setSelectedFrameworks(frameworkIds);
     } catch (error) {
       console.error('Error saving framework selection:', error);
     }
-  }, []);
+  }, [canEdit]);
 
   // Toggle framework selection
   const toggleFramework = useCallback((frameworkId: string) => {

@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, PieChart, Pie } from 'recharts';
@@ -47,7 +47,13 @@ import {
   DashboardKPIGrid,
   DashboardKPICard,
   DashboardRoadmapGrid,
+  DashboardLayoutRenderer,
+  PeriodComparisonCard,
 } from '@/components/dashboard';
+import MaturityTrendChart from '@/components/MaturityTrendChart';
+import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canEditAssessments } from '@/lib/roles';
 
 // Domain function keys for i18n
 const getDomainFunctionLabels = (t: (key: string) => string, securityDomainId: string): Record<string, string> => {
@@ -147,6 +153,9 @@ export function ExecutiveDashboard({
 }: ExecutiveDashboardProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { layout } = useDashboardLayout('executive');
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
   
   // Get domain-specific labels using i18n
   const currentFunctionLabels = getDomainFunctionLabels(t, securityDomainId);
@@ -440,6 +449,7 @@ export function ExecutiveDashboard({
 
   // Framework selection helpers
   const toggleFramework = (frameworkId: string) => {
+    if (!canEdit) return;
     if (selectedFrameworkIds.includes(frameworkId)) {
       onFrameworkSelectionChange(selectedFrameworkIds.filter(id => id !== frameworkId));
     } else {
@@ -486,9 +496,50 @@ export function ExecutiveDashboard({
 
   const headerConfig = domainHeaderConfig[securityDomainId] || domainHeaderConfig.AI_SECURITY;
 
-  return (
-    <div className="space-y-6">
-      {/* Executive Summary Header with Framework Selector */}
+  const frameworkCoverageSection = filteredByFramework.coverage.length > 0 ? (
+    <div 
+      className="card-elevated p-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
+      style={{ animationDelay: '600ms', animationFillMode: 'backwards' }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold">Cobertura por Framework</h3>
+        <DomainFrameworkCoverageHelp securityDomainId={securityDomainId} />
+      </div>
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {filteredByFramework.coverage.map((fc, idx) => (
+          <div 
+            key={fc.framework} 
+            className="p-4 bg-muted/50 rounded-lg animate-in fade-in-0 zoom-in-95 duration-300"
+            style={{ animationDelay: `${700 + idx * 50}ms`, animationFillMode: 'backwards' }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium text-sm truncate" title={fc.framework}>
+                {fc.framework}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2 mb-2">
+              <span className="text-2xl font-bold">
+                {Math.round(fc.averageScore * 100)}%
+              </span>
+              <span className="text-xs text-muted-foreground">score</span>
+            </div>
+            <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full bg-primary transition-all" 
+                style={{ width: `${fc.coverage * 100}%` }}
+              />
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {fc.answeredQuestions}/{fc.totalQuestions} perguntas respondidas
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null;
+
+  const widgets: Record<string, ReactNode> = {
+    'executive.header': (
       <DashboardHeader
         title={headerConfig.title}
         subtitle={headerConfig.subtitle}
@@ -500,10 +551,11 @@ export function ExecutiveDashboard({
           selectedIds={selectedFrameworkIds}
           onToggle={toggleFramework}
           helpTooltip={<FrameworkCategoryHelp />}
+          disabled={!canEdit}
         />
       </DashboardHeader>
-
-      {/* Executive KPI Cards - Standardized */}
+    ),
+    'executive.kpis': (
       <DashboardKPIGrid columns={4}>
         <DashboardKPICard
           label="Score Geral"
@@ -511,16 +563,16 @@ export function ExecutiveDashboard({
           suffix="%"
           helpTooltip={<MaturityScoreHelp />}
           progress={metrics.overallScore * 100}
-          subtitle={`Nível ${metrics.maturityLevel.level}: ${metrics.maturityLevel.name}`}
+          subtitle={`NÃ­vel ${metrics.maturityLevel.level}: ${metrics.maturityLevel.name}`}
           animationDelay={0}
           onClick={() => setSelectedKpiModal('score')}
         />
         <DashboardKPICard
-          label="Gaps Críticos"
+          label="Gaps CrÃ­ticos"
           value={filteredByFramework.gaps.length}
           helpTooltip={<DomainCriticalGapsHelp securityDomainId={securityDomainId} />}
           progress={Math.min((filteredByFramework.gaps.length / Math.max(coverageStats.total * 0.1, 1)) * 100, 100)}
-          subtitle="Requerem ação prioritária"
+          subtitle="Requerem aÃ§Ã£o prioritÃ¡ria"
           animationDelay={75}
           variant="danger"
           onClick={() => setSelectedKpiModal('gaps')}
@@ -537,28 +589,27 @@ export function ExecutiveDashboard({
           onClick={() => setSelectedKpiModal('coverage')}
         />
         <DashboardKPICard
-          label="Prontidão de Evidências"
+          label="ProntidÃ£o de EvidÃªncias"
           value={Math.round(metrics.evidenceReadiness * 100)}
           suffix="%"
           helpTooltip={<EvidenceReadinessHelp />}
           progress={metrics.evidenceReadiness * 100}
-          subtitle="Preparação para auditoria"
+          subtitle="PreparaÃ§Ã£o para auditoria"
           animationDelay={225}
           variant="success"
           onClick={() => setSelectedKpiModal('evidence')}
         />
       </DashboardKPIGrid>
-
-      {/* Domain-Specific Indicators */}
+    ),
+    'executive.indicators': (
       <DomainSpecificIndicators 
         securityDomainId={securityDomainId}
         questions={activeQuestions}
         answers={answers}
       />
-
-      {/* Charts Row */}
+    ),
+    'executive.charts': (
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Domain-specific Function Radar (NIST AI RMF / Cloud Pillars / DevSecOps Practices) */}
         <div 
           className="card-elevated p-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
           style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}
@@ -606,14 +657,13 @@ export function ExecutiveDashboard({
           </div>
         </div>
 
-        {/* Domain Bar Chart */}
         <div 
           className="card-elevated p-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
           style={{ animationDelay: '400ms', animationFillMode: 'backwards' }}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-sm">Maturidade por Domínio</h3>
+              <h3 className="font-semibold text-sm">Maturidade por DomÃ­nio</h3>
               <DomainMetricsHelpAware securityDomainId={securityDomainId} />
             </div>
             {nistFilter !== 'all' && (
@@ -651,18 +701,17 @@ export function ExecutiveDashboard({
               className="h-auto p-0 text-xs"
               onClick={() => navigate('/assessment')}
             >
-              Ver todos os domínios
+              Ver todos os domÃ­nios
             </Button>
           </div>
         </div>
 
-        {/* Risk Distribution Pie */}
         <div 
           className="card-elevated p-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
           style={{ animationDelay: '500ms', animationFillMode: 'backwards' }}
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm">Distribuição de Riscos</h3>
+            <h3 className="font-semibold text-sm">DistribuiÃ§Ã£o de Riscos</h3>
             <DomainRiskDistributionHelp securityDomainId={securityDomainId} />
           </div>
           {riskDistribution.length > 0 ? (
@@ -693,16 +742,16 @@ export function ExecutiveDashboard({
                     key={r.name}
                     onClick={() => {
                       const critMap: Record<string, CriticalityFilter> = {
-                        'Crítico': 'Critical', 'Alto': 'High', 'Médio': 'Medium', 'Baixo': 'Low'
+                        'CrÃ­tico': 'Critical', 'Alto': 'High', 'MÃ©dio': 'Medium', 'Baixo': 'Low'
                       };
                       const newFilter = critMap[r.name];
                       setCriticalityFilter(criticalityFilter === newFilter ? 'all' : newFilter);
                     }}
                     className={cn(
                       "flex items-center justify-between p-2 rounded transition-colors",
-                      (r.name === 'Crítico' && criticalityFilter === 'Critical') ||
+                      (r.name === 'CrÃ­tico' && criticalityFilter === 'Critical') ||
                       (r.name === 'Alto' && criticalityFilter === 'High') ||
-                      (r.name === 'Médio' && criticalityFilter === 'Medium') ||
+                      (r.name === 'MÃ©dio' && criticalityFilter === 'Medium') ||
                       (r.name === 'Baixo' && criticalityFilter === 'Low')
                         ? "bg-primary/20 border border-primary/30" 
                         : "bg-muted/50 hover:bg-muted"
@@ -724,51 +773,9 @@ export function ExecutiveDashboard({
           )}
         </div>
       </div>
-
-      {/* Framework Coverage */}
-      {filteredByFramework.coverage.length > 0 && (
-        <div 
-          className="card-elevated p-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
-          style={{ animationDelay: '600ms', animationFillMode: 'backwards' }}
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Cobertura por Framework</h3>
-            <DomainFrameworkCoverageHelp securityDomainId={securityDomainId} />
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {filteredByFramework.coverage.map((fc, idx) => (
-              <div 
-                key={fc.framework} 
-                className="p-4 bg-muted/50 rounded-lg animate-in fade-in-0 zoom-in-95 duration-300"
-                style={{ animationDelay: `${700 + idx * 50}ms`, animationFillMode: 'backwards' }}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-sm truncate" title={fc.framework}>
-                    {fc.framework}
-                  </span>
-                </div>
-                <div className="flex items-baseline gap-2 mb-2">
-                  <span className="text-2xl font-bold">
-                    {Math.round(fc.averageScore * 100)}%
-                  </span>
-                  <span className="text-xs text-muted-foreground">score</span>
-                </div>
-                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden mb-2">
-                  <div 
-                    className="h-full bg-primary transition-all" 
-                    style={{ width: `${fc.coverage * 100}%` }}
-                  />
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {fc.answeredQuestions}/{fc.totalQuestions} perguntas respondidas
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Framework Category Maturity */}
+    ),
+    'executive.frameworkCoverage': frameworkCoverageSection,
+    'executive.frameworkCategories': (
       <div 
         className="card-elevated p-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
         style={{ animationDelay: '700ms', animationFillMode: 'backwards' }}
@@ -807,17 +814,17 @@ export function ExecutiveDashboard({
           ))}
         </div>
       </div>
-
-      {/* Strategic Roadmap - Standardized */}
+    ),
+    'executive.roadmap': (
       <DashboardRoadmapGrid
         items={filteredByFramework.roadmapItems}
-        title="Roadmap Estratégico"
-        subtitle="Ações prioritárias para os próximos 90 dias"
+        title="Roadmap EstratÃ©gico"
+        subtitle="AÃ§Ãµes prioritÃ¡rias para os prÃ³ximos 90 dias"
         helpTooltip={<DomainRoadmapHelp securityDomainId={securityDomainId} />}
         animationDelay={850}
       />
-
-      {/* Critical Gaps with Filters */}
+    ),
+    'executive.criticalGaps': (
       <div 
         className="card-elevated p-6 animate-in fade-in-0 slide-in-from-bottom-4 duration-500"
         style={{ animationDelay: '1000ms', animationFillMode: 'backwards' }}
@@ -825,7 +832,7 @@ export function ExecutiveDashboard({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
           <div className="flex items-center gap-2">
             <div>
-              <h3 className="font-semibold">Gaps Críticos</h3>
+              <h3 className="font-semibold">Gaps CrÃ­ticos</h3>
               <p className="text-xs text-muted-foreground mt-1">
                 {filteredGaps.length} gaps encontrados
                 {hasActiveFilters && ` (de ${filteredByFramework.gaps.length} total)`}
@@ -834,7 +841,6 @@ export function ExecutiveDashboard({
             <DomainCriticalGapsHelp securityDomainId={securityDomainId} />
           </div>
           
-          {/* Filters */}
           <div className="flex flex-wrap items-center gap-2">
             <Input
               placeholder="Buscar..."
@@ -850,9 +856,9 @@ export function ExecutiveDashboard({
               </SelectTrigger>
               <SelectContent className="bg-popover">
                 <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="Critical">Crítico</SelectItem>
+                <SelectItem value="Critical">CrÃ­tico</SelectItem>
                 <SelectItem value="High">Alto</SelectItem>
-                <SelectItem value="Medium">Médio</SelectItem>
+                <SelectItem value="Medium">MÃ©dio</SelectItem>
                 <SelectItem value="Low">Baixo</SelectItem>
               </SelectContent>
             </Select>
@@ -885,7 +891,7 @@ export function ExecutiveDashboard({
                 <span className="text-lg font-bold text-muted-foreground w-6 transition-all duration-200">{idx + 1}</span>
                 <div className="min-w-0 flex-1">
                   <p className="font-medium text-sm truncate transition-colors duration-200">{gap.questionText}</p>
-                  <p className="text-xs text-muted-foreground truncate transition-colors duration-200">{gap.subcatName} · {gap.domainName}</p>
+                  <p className="text-xs text-muted-foreground truncate transition-colors duration-200">{gap.subcatName} - {gap.domainName}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3 flex-shrink-0">
@@ -900,16 +906,16 @@ export function ExecutiveDashboard({
                 )}>
                   {gap.criticality}
                 </span>
-                <span className="font-mono text-sm w-12 text-right transition-all duration-200">
-                  {Math.round(gap.effectiveScore * 100)}%
-                </span>
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                  ?
+                </Button>
               </div>
             </div>
           ))}
           
           {filteredGaps.length === 0 && (
-            <div className="text-center py-8 text-sm text-muted-foreground animate-in fade-in-0 duration-300">
-              {hasActiveFilters ? 'Nenhum gap encontrado com os filtros aplicados' : 'Nenhum gap crítico identificado'}
+            <div className="text-center py-8 text-muted-foreground">
+              {hasActiveFilters ? 'Nenhum gap encontrado com os filtros aplicados' : 'Nenhum gap crÃ­tico identificado'}
             </div>
           )}
         </div>
@@ -926,6 +932,21 @@ export function ExecutiveDashboard({
           </div>
         )}
       </div>
+    ),
+    'shared.periodComparison': (
+      <PeriodComparisonCard 
+        securityDomainId={securityDomainId}
+        className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500" 
+      />
+    ),
+    'shared.maturityTrend': (
+      <MaturityTrendChart className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-100" />
+    ),
+  };
+
+  return (
+    <div className="space-y-6">
+      <DashboardLayoutRenderer layout={layout} widgets={widgets} />
 
       {/* Score Details Modal */}
       <Dialog open={selectedKpiModal === 'score'} onOpenChange={(open) => !open && setSelectedKpiModal(null)}>

@@ -1,4 +1,4 @@
-import frameworksData from '@/data/frameworks.json';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Framework {
   frameworkId: string;
@@ -20,9 +20,44 @@ export interface FrameworksConfig {
   frameworks: Framework[];
 }
 
-// Type assertion for imported data
-export const frameworksConfig: FrameworksConfig = frameworksData as FrameworksConfig;
-export const frameworks: Framework[] = frameworksConfig.frameworks;
+export let frameworks: Framework[] = [];
+let frameworksLoaded = false;
+let frameworksLoading: Promise<void> | null = null;
+
+function mapFrameworkRow(row: any): Framework {
+  return {
+    frameworkId: row.framework_id,
+    frameworkName: row.framework_name,
+    shortName: row.short_name,
+    description: row.description ?? '',
+    targetAudience: row.target_audience ?? [],
+    assessmentScope: row.assessment_scope ?? '',
+    defaultEnabled: row.default_enabled ?? false,
+    version: row.version ?? '1.0.0',
+    category: (row.category ?? 'core') as Framework['category'],
+    references: row.reference_links ?? [],
+    securityDomainId: row.security_domain_id ?? undefined,
+  };
+}
+
+export async function loadFrameworksFromDatabase(): Promise<void> {
+  if (frameworksLoaded) return;
+  if (frameworksLoading) return frameworksLoading;
+
+  frameworksLoading = (async () => {
+    const { data, error } = await supabase
+      .from('default_frameworks')
+      .select('framework_id, framework_name, short_name, description, target_audience, assessment_scope, default_enabled, version, category, reference_links, security_domain_id');
+
+    if (error) throw error;
+    frameworks = (data || []).map(mapFrameworkRow);
+    frameworksLoaded = true;
+  })().finally(() => {
+    frameworksLoading = null;
+  });
+
+  return frameworksLoading;
+}
 
 // Security Domain to Framework mapping
 // This maps each framework to its primary security domain
@@ -107,12 +142,9 @@ export function getFrameworkIds(): string[] {
   return frameworks.map(f => f.frameworkId);
 }
 
-// Authoritative framework IDs for validation
-export const AUTHORITATIVE_FRAMEWORK_IDS = new Set(getFrameworkIds());
-
 // Validate if a framework ID is in the authoritative set
 export function isAuthoritativeFramework(frameworkId: string): boolean {
-  return AUTHORITATIVE_FRAMEWORK_IDS.has(frameworkId);
+  return frameworks.some(f => f.frameworkId === frameworkId);
 }
 
 // Map question framework strings to framework IDs

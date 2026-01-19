@@ -1,6 +1,6 @@
 # ADR 0005: Framework Catalog Defaults and XLSX Import
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-01-17
 
 ## Context
@@ -14,6 +14,8 @@ XLSX import for creating domains, frameworks, and questions. All domains,
 frameworks, and questions must be loaded from the database (no static JSON).
 Administrators can enable/disable frameworks per persona and modify the catalog
 as required.
+Initial catalog load is performed by the admin after installation using the
+provided import files.
 
 ## Consequences
 - Reduces onboarding time for enterprise customers.

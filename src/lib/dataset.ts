@@ -1,10 +1,5 @@
-import taxonomyData from '@/data/taxonomy.json';
-import questionsData from '@/data/questions.json';
 import maturityRefData from '@/data/maturityRef.json';
-import cloudSecurityTaxonomy from '@/data/cloud-security-taxonomy.json';
-import cloudSecurityQuestions from '@/data/cloud-security-questions.json';
-import devsecOpsTaxonomy from '@/data/devsecops-taxonomy.json';
-import devsecOpsQuestions from '@/data/devsecops-questions.json';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface Domain {
   domainId: string;
@@ -79,79 +74,100 @@ export interface FrameworkCategory {
   frameworks: string[];
 }
 
-// Merge domains from all security domains
-const aiSecurityDomains: Domain[] = (taxonomyData.domains as Domain[]).map(d => ({
-  ...d,
-  securityDomainId: 'AI_SECURITY'
-}));
+export let domains: Domain[] = [];
+export let subcategories: Subcategory[] = [];
+export let questions: Question[] = [];
 
-const cloudSecurityDomains: Domain[] = (cloudSecurityTaxonomy.domains as Domain[]).map(d => ({
-  ...d,
-  securityDomainId: 'CLOUD_SECURITY'
-}));
+let catalogLoaded = false;
+let catalogLoading: Promise<void> | null = null;
 
-const devsecOpsDomains: Domain[] = (devsecOpsTaxonomy.domains as Domain[]).map(d => ({
-  ...d,
-  securityDomainId: 'DEVSECOPS'
-}));
+function mapDomainRow(row: any): Domain {
+  return {
+    domainId: row.domain_id,
+    domainName: row.domain_name,
+    order: row.display_order ?? row.order ?? 0,
+    nistAiRmfFunction: row.nist_ai_rmf_function ?? row.nist_function ?? undefined,
+    strategicQuestion: row.strategic_question ?? undefined,
+    description: row.description ?? undefined,
+    bankingRelevance: row.banking_relevance ?? undefined,
+    securityDomainId: row.security_domain_id ?? undefined,
+  };
+}
 
-// Merge subcategories from all security domains
-const aiSecuritySubcategories: Subcategory[] = (taxonomyData.subcategories as Subcategory[]).map(s => ({
-  ...s,
-  securityDomainId: 'AI_SECURITY'
-}));
+function mapSubcategoryRow(row: any): Subcategory {
+  return {
+    subcatId: row.subcat_id,
+    domainId: row.domain_id,
+    subcatName: row.subcat_name,
+    definition: row.definition ?? undefined,
+    objective: row.objective ?? undefined,
+    securityOutcome: row.security_outcome ?? undefined,
+    criticality: (row.criticality ?? 'Medium') as Subcategory['criticality'],
+    weight: row.weight ?? 1,
+    ownershipType: row.ownership_type ?? undefined,
+    riskSummary: row.risk_summary ?? undefined,
+    frameworkRefs: row.framework_refs ?? undefined,
+    securityDomainId: row.security_domain_id ?? undefined,
+  };
+}
 
-const cloudSecuritySubcategories: Subcategory[] = (cloudSecurityTaxonomy.subcategories as Subcategory[]).map(s => ({
-  ...s,
-  securityDomainId: 'CLOUD_SECURITY'
-}));
+function mapQuestionRow(row: any): Question {
+  return {
+    questionId: row.question_id,
+    subcatId: row.subcat_id ?? '',
+    domainId: row.domain_id,
+    questionText: row.question_text,
+    expectedEvidence: row.expected_evidence ?? '',
+    imperativeChecks: row.imperative_checks ?? '',
+    riskSummary: row.risk_summary ?? '',
+    frameworks: row.frameworks ?? [],
+    frameworkId: row.framework_id ?? undefined,
+    ownershipType: row.ownership_type ?? undefined,
+    securityDomainId: row.security_domain_id ?? undefined,
+  };
+}
 
-const devsecOpsSubcategories: Subcategory[] = (devsecOpsTaxonomy.subcategories as Subcategory[]).map(s => ({
-  ...s,
-  securityDomainId: 'DEVSECOPS'
-}));
+export function isCatalogLoaded(): boolean {
+  return catalogLoaded;
+}
 
-// Merge questions from all security domains
-const aiSecurityQuestions: Question[] = (questionsData.questions as Question[]).map(q => ({
-  ...q,
-  securityDomainId: 'AI_SECURITY'
-}));
+export async function loadCatalogFromDatabase(): Promise<void> {
+  if (catalogLoaded) return;
+  if (catalogLoading) return catalogLoading;
 
-const cloudSecurityQuestionsData: Question[] = (cloudSecurityQuestions.questions as Question[]).map(q => ({
-  ...q,
-  securityDomainId: 'CLOUD_SECURITY'
-}));
+  catalogLoading = (async () => {
+    const [domainsRes, subcategoriesRes, questionsRes] = await Promise.all([
+      supabase
+        .from('domains')
+        .select('domain_id, domain_name, display_order, nist_ai_rmf_function, strategic_question, description, banking_relevance, security_domain_id'),
+      supabase
+        .from('subcategories')
+        .select('subcat_id, domain_id, subcat_name, definition, objective, security_outcome, criticality, weight, ownership_type, risk_summary, framework_refs, security_domain_id'),
+      supabase
+        .from('default_questions')
+        .select('question_id, subcat_id, domain_id, question_text, expected_evidence, imperative_checks, risk_summary, frameworks, framework_id, ownership_type, security_domain_id')
+    ]);
 
-const devsecOpsQuestionsData: Question[] = (devsecOpsQuestions.questions as Question[]).map(q => ({
-  ...q,
-  securityDomainId: 'DEVSECOPS'
-}));
+    if (domainsRes.error) throw domainsRes.error;
+    if (subcategoriesRes.error) throw subcategoriesRes.error;
+    if (questionsRes.error) throw questionsRes.error;
 
-// Exported merged data
-export const domains: Domain[] = [
-  ...aiSecurityDomains,
-  ...cloudSecurityDomains,
-  ...devsecOpsDomains
-];
+    domains = (domainsRes.data || []).map(mapDomainRow);
+    subcategories = (subcategoriesRes.data || []).map(mapSubcategoryRow);
+    questions = (questionsRes.data || []).map(mapQuestionRow);
+    catalogLoaded = true;
+  })().finally(() => {
+    catalogLoading = null;
+  });
 
-export const subcategories: Subcategory[] = [
-  ...aiSecuritySubcategories,
-  ...cloudSecuritySubcategories,
-  ...devsecOpsSubcategories
-];
-
-export const questions: Question[] = [
-  ...aiSecurityQuestions,
-  ...cloudSecurityQuestionsData,
-  ...devsecOpsQuestionsData
-];
+  return catalogLoading;
+}
 
 export const maturityLevels: MaturityLevel[] = maturityRefData.levels;
 export const criticalityLevels: CriticalityLevel[] = maturityRefData.criticalityLevels;
 export const responseOptions: ResponseOption[] = maturityRefData.responseOptions;
 export const evidenceOptions: EvidenceOption[] = maturityRefData.evidenceOptions;
-export const frameworkCategories: Record<string, FrameworkCategory> = 
-  (taxonomyData as any).frameworkCategories || {};
+export const frameworkCategories: Record<string, FrameworkCategory> = {};
 
 // NIST AI RMF Functions for grouping
 export const nistAiRmfFunctions = ['GOVERN', 'MAP', 'MEASURE', 'MANAGE'] as const;

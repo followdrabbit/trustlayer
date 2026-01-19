@@ -347,6 +347,30 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_layouts: {
+        Row: {
+          created_at: string
+          dashboard_key: string
+          id: string
+          layout: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dashboard_key: string
+          id?: string
+          layout: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dashboard_key?: string
+          id?: string
+          layout?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       default_frameworks: {
         Row: {
           assessment_scope: string | null

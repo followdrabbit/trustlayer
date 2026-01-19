@@ -1,6 +1,6 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, X, ArrowRight, Layers, BookMarked, ClipboardList, Settings, Shield, BookOpen, Building2, FileDown, Trash2, Info, Sun, Volume2, Bell, Mic, Palette } from 'lucide-react';
+import { ArrowRight, Bell, Mic, Palette, Search, Sun, Volume2, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ interface SearchableItemConfig {
   titleKey: string;
   descriptionKey: string;
   keywords: string[];
-  tab: 'content' | 'assessment' | 'preferences' | 'system';
+  tab: 'preferences';
   sectionKey?: string;
   icon: React.ElementType;
 }
@@ -22,68 +22,17 @@ interface SearchableItem {
   title: string;
   description: string;
   keywords: string[];
-  tab: 'content' | 'assessment' | 'preferences' | 'system';
+  tab: 'preferences';
   section?: string;
   icon: React.ElementType;
 }
 
-// Define all searchable items in settings with translation keys
 const SEARCHABLE_ITEMS_CONFIG: SearchableItemConfig[] = [
-  // Content Tab
-  {
-    id: 'domains',
-    titleKey: 'settingsSearch.domains.title',
-    descriptionKey: 'settingsSearch.domains.description',
-    keywords: ['domínio', 'domain', 'security domain', 'ai security', 'cloud security', 'devsecops', 'habilitar', 'desabilitar', 'enable', 'disable'],
-    tab: 'content',
-    sectionKey: 'settingsSearch.domains.section',
-    icon: Layers,
-  },
-  {
-    id: 'frameworks-management',
-    titleKey: 'settingsSearch.frameworks.title',
-    descriptionKey: 'settingsSearch.frameworks.description',
-    keywords: ['framework', 'nist', 'iso', 'cis', 'owasp', 'criar', 'create', 'importar', 'import', 'excluir', 'delete'],
-    tab: 'content',
-    sectionKey: 'settingsSearch.frameworks.section',
-    icon: Shield,
-  },
-  {
-    id: 'questions-management',
-    titleKey: 'settingsSearch.questions.title',
-    descriptionKey: 'settingsSearch.questions.description',
-    keywords: ['pergunta', 'question', 'questão', 'criar', 'create', 'importar', 'import', 'versão', 'version', 'histórico', 'history'],
-    tab: 'content',
-    sectionKey: 'settingsSearch.questions.section',
-    icon: BookOpen,
-  },
-  
-  // Assessment Tab
-  {
-    id: 'assessment-info',
-    titleKey: 'settingsSearch.assessmentInfo.title',
-    descriptionKey: 'settingsSearch.assessmentInfo.description',
-    keywords: ['nome', 'name', 'organização', 'organization', 'empresa', 'company', 'cadência', 'cadence', 'reavaliação', 'reassessment'],
-    tab: 'assessment',
-    sectionKey: 'settingsSearch.assessmentInfo.section',
-    icon: Building2,
-  },
-  {
-    id: 'framework-selection',
-    titleKey: 'settingsSearch.frameworkSelection.title',
-    descriptionKey: 'settingsSearch.frameworkSelection.description',
-    keywords: ['ativar', 'activate', 'selecionar', 'select', 'escolher', 'choose', 'habilitar', 'enable', 'desabilitar', 'disable'],
-    tab: 'assessment',
-    sectionKey: 'settingsSearch.frameworkSelection.section',
-    icon: Shield,
-  },
-
-  // Preferences Tab
   {
     id: 'appearance',
     titleKey: 'settingsSearch.appearance.title',
     descriptionKey: 'settingsSearch.appearance.description',
-    keywords: ['aparência', 'appearance', 'tema', 'theme', 'claro', 'light', 'escuro', 'dark', 'idioma', 'language'],
+    keywords: ['aparencia', 'appearance', 'tema', 'theme', 'claro', 'light', 'escuro', 'dark', 'idioma', 'language'],
     tab: 'preferences',
     sectionKey: 'settingsSearch.appearance.section',
     icon: Sun,
@@ -92,7 +41,7 @@ const SEARCHABLE_ITEMS_CONFIG: SearchableItemConfig[] = [
     id: 'voice-settings',
     titleKey: 'settingsSearch.voiceSettings.title',
     descriptionKey: 'settingsSearch.voiceSettings.description',
-    keywords: ['voz', 'voice', 'fala', 'speech', 'velocidade', 'speed', 'rate', 'tom', 'pitch', 'volume', 'tts', 'síntese', 'synthesis'],
+    keywords: ['voz', 'voice', 'fala', 'speech', 'velocidade', 'speed', 'rate', 'tom', 'pitch', 'volume', 'tts', 'sintese', 'synthesis'],
     tab: 'preferences',
     sectionKey: 'settingsSearch.voiceSettings.section',
     icon: Volume2,
@@ -101,7 +50,7 @@ const SEARCHABLE_ITEMS_CONFIG: SearchableItemConfig[] = [
     id: 'stt-config',
     titleKey: 'settingsSearch.sttConfig.title',
     descriptionKey: 'settingsSearch.sttConfig.description',
-    keywords: ['stt', 'speech to text', 'reconhecimento', 'recognition', 'whisper', 'transcrição', 'transcription', 'microfone', 'microphone', 'api key'],
+    keywords: ['stt', 'speech to text', 'reconhecimento', 'recognition', 'whisper', 'transcricao', 'transcription', 'microfone', 'microphone', 'api key'],
     tab: 'preferences',
     sectionKey: 'settingsSearch.sttConfig.section',
     icon: Mic,
@@ -110,7 +59,7 @@ const SEARCHABLE_ITEMS_CONFIG: SearchableItemConfig[] = [
     id: 'voice-profile',
     titleKey: 'settingsSearch.voiceProfile.title',
     descriptionKey: 'settingsSearch.voiceProfile.description',
-    keywords: ['perfil', 'profile', 'biometria', 'biometric', 'voice profile', 'speaker', 'reconhecimento', 'recognition', 'verificação', 'verification'],
+    keywords: ['perfil', 'profile', 'biometria', 'biometric', 'voice profile', 'speaker', 'reconhecimento', 'recognition', 'verificacao', 'verification'],
     tab: 'preferences',
     sectionKey: 'settingsSearch.voiceProfile.section',
     icon: Mic,
@@ -119,57 +68,10 @@ const SEARCHABLE_ITEMS_CONFIG: SearchableItemConfig[] = [
     id: 'notifications',
     titleKey: 'settingsSearch.notifications.title',
     descriptionKey: 'settingsSearch.notifications.description',
-    keywords: ['notificação', 'notification', 'alerta', 'alert', 'email', 'semanal', 'weekly', 'digest', 'atualização', 'update', 'novidades', 'news'],
+    keywords: ['notificacao', 'notification', 'alerta', 'alert', 'email', 'semanal', 'weekly', 'digest', 'atualizacao', 'update', 'novidades', 'news'],
     tab: 'preferences',
     sectionKey: 'settingsSearch.notifications.section',
     icon: Bell,
-  },
-  
-  // System Tab
-  {
-    id: 'export',
-    titleKey: 'settingsSearch.export.title',
-    descriptionKey: 'settingsSearch.export.description',
-    keywords: ['exportar', 'export', 'excel', 'xlsx', 'download', 'backup', 'salvar', 'save'],
-    tab: 'system',
-    sectionKey: 'settingsSearch.export.section',
-    icon: FileDown,
-  },
-  {
-    id: 'demo-data',
-    titleKey: 'settingsSearch.demoData.title',
-    descriptionKey: 'settingsSearch.demoData.description',
-    keywords: ['demo', 'demonstração', 'demonstration', 'exemplo', 'example', 'teste', 'test', 'gerar', 'generate', 'simular', 'simulate'],
-    tab: 'system',
-    sectionKey: 'settingsSearch.demoData.section',
-    icon: FileDown,
-  },
-  {
-    id: 'clear-answers',
-    titleKey: 'settingsSearch.clearAnswers.title',
-    descriptionKey: 'settingsSearch.clearAnswers.description',
-    keywords: ['limpar', 'clear', 'apagar', 'erase', 'deletar', 'delete', 'remover', 'remove', 'respostas', 'answers', 'reset'],
-    tab: 'system',
-    sectionKey: 'settingsSearch.clearAnswers.section',
-    icon: Trash2,
-  },
-  {
-    id: 'restore-defaults',
-    titleKey: 'settingsSearch.restoreDefaults.title',
-    descriptionKey: 'settingsSearch.restoreDefaults.description',
-    keywords: ['restaurar', 'restore', 'padrão', 'default', 'reset', 'resetar', 'inicial', 'initial', 'original'],
-    tab: 'system',
-    sectionKey: 'settingsSearch.restoreDefaults.section',
-    icon: Trash2,
-  },
-  {
-    id: 'about',
-    titleKey: 'settingsSearch.about.title',
-    descriptionKey: 'settingsSearch.about.description',
-    keywords: ['sobre', 'about', 'versão', 'version', 'metodologia', 'methodology', 'informações', 'information', 'plataforma', 'platform', 'ajuda', 'help'],
-    tab: 'system',
-    sectionKey: 'settingsSearch.about.section',
-    icon: Info,
   },
 ];
 
@@ -182,17 +84,15 @@ export function SettingsSearch({ onNavigate }: SettingsSearchProps) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
-  // Tab configuration with translated labels
-  const TAB_CONFIG = useMemo(() => ({
-    content: { label: t('settings.contentTab'), icon: BookMarked, color: 'bg-primary/10 text-primary' },
-    assessment: { label: t('settings.assessmentTab'), icon: ClipboardList, color: 'bg-amber-500/10 text-amber-700' },
-    preferences: { label: t('settings.preferencesTab'), icon: Palette, color: 'bg-pink-500/10 text-pink-700' },
-    system: { label: t('settings.systemTab'), icon: Settings, color: 'bg-gray-500/10 text-gray-700' },
-  }), [t]);
+  const TAB_CONFIG = useMemo(
+    () => ({
+      preferences: { label: t('settings.preferencesTab'), icon: Palette, color: 'bg-pink-500/10 text-pink-700' },
+    }),
+    [t]
+  );
 
-  // Translate searchable items
   const searchableItems: SearchableItem[] = useMemo(() => {
-    return SEARCHABLE_ITEMS_CONFIG.map(item => ({
+    return SEARCHABLE_ITEMS_CONFIG.map((item) => ({
       id: item.id,
       title: t(item.titleKey),
       description: t(item.descriptionKey),
@@ -205,26 +105,25 @@ export function SettingsSearch({ onNavigate }: SettingsSearchProps) {
 
   const results = useMemo(() => {
     if (!query.trim()) return [];
-    
     const searchTerms = query.toLowerCase().split(' ').filter(Boolean);
-    
-    return searchableItems.filter(item => {
-      const searchableText = [
-        item.title,
-        item.description,
-        ...item.keywords,
-        item.section || '',
-      ].join(' ').toLowerCase();
-      
-      return searchTerms.every(term => searchableText.includes(term));
-    }).slice(0, 6); // Limit to 6 results
+    return searchableItems
+      .filter((item) => {
+        const searchableText = [item.title, item.description, ...item.keywords, item.section || '']
+          .join(' ')
+          .toLowerCase();
+        return searchTerms.every((term) => searchableText.includes(term));
+      })
+      .slice(0, 6);
   }, [query, searchableItems]);
 
-  const handleSelect = useCallback((item: SearchableItem) => {
-    onNavigate(item.tab, item.id);
-    setQuery('');
-    setIsFocused(false);
-  }, [onNavigate]);
+  const handleSelect = useCallback(
+    (item: SearchableItem) => {
+      onNavigate(item.tab, item.id);
+      setQuery('');
+      setIsFocused(false);
+    },
+    [onNavigate]
+  );
 
   const handleClear = useCallback(() => {
     setQuery('');
@@ -265,14 +164,13 @@ export function SettingsSearch({ onNavigate }: SettingsSearchProps) {
                 {results.map((item) => {
                   const tabConfig = TAB_CONFIG[item.tab];
                   const Icon = item.icon;
-                  
                   return (
                     <button
                       key={item.id}
                       onClick={() => handleSelect(item)}
                       className="w-full flex items-start gap-3 p-3 rounded-md hover:bg-accent transition-colors text-left group"
                     >
-                      <div className={cn("h-8 w-8 rounded-md flex items-center justify-center shrink-0", tabConfig.color)}>
+                      <div className={cn('h-8 w-8 rounded-md flex items-center justify-center shrink-0', tabConfig.color)}>
                         <Icon className="h-4 w-4" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -282,13 +180,9 @@ export function SettingsSearch({ onNavigate }: SettingsSearchProps) {
                             {tabConfig.label}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                          {item.description}
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{item.description}</p>
                         {item.section && (
-                          <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">
-                            → {item.section}
-                          </p>
+                          <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">- {item.section}</p>
                         )}
                       </div>
                       <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-1" />

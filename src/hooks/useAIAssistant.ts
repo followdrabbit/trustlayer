@@ -3,10 +3,10 @@ import { useDashboardMetrics } from './useDashboardMetrics';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { getEnabledSecurityDomains, SecurityDomain } from '@/lib/securityDomains';
-import { questions as defaultQuestions } from '@/lib/dataset';
+import { questions as defaultQuestions, loadCatalogFromDatabase } from '@/lib/dataset';
 import { calculateOverallMetrics, getCriticalGaps, ActiveQuestion } from '@/lib/scoring';
 import { useAnswersStore } from '@/lib/stores';
-import { getFrameworksBySecurityDomain } from '@/lib/frameworks';
+import { getFrameworksBySecurityDomain, loadFrameworksFromDatabase } from '@/lib/frameworks';
 
 export interface ChatMessage {
   id: string;
@@ -61,6 +61,11 @@ export function useAIAssistant(): UseAIAssistantReturn {
   useEffect(() => {
     async function loadAllDomainsMetrics() {
       try {
+        await Promise.all([
+          loadCatalogFromDatabase(),
+          loadFrameworksFromDatabase(),
+        ]);
+
         const enabledDomains = await getEnabledSecurityDomains();
         
         const metricsPromises = enabledDomains.map(async (domain: SecurityDomain) => {
@@ -215,7 +220,10 @@ export function useAIAssistant(): UseAIAssistantReturn {
     try {
       // Get auth token for the request
       const { data: { session } } = await supabase.auth.getSession();
-      const authToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const authToken = session?.access_token;
+      if (!authToken) {
+        throw new Error('Sessao expirada. Faca login novamente.');
+      }
 
       const response = await fetch(CHAT_URL, {
         method: 'POST',

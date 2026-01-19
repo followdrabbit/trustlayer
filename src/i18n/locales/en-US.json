@@ -29,7 +29,6 @@
     "general": "General",
     "saveChanges": "Save Changes",
     "clearAll": "Clear All",
-    "demoData": "Demo Data",
     "importXLSX": "Import XLSX",
     "changeFrameworks": "Change Frameworks",
     "of": "of",
@@ -157,7 +156,6 @@
     "priorityActions": "Priority Actions",
     "noData": "No assessment performed yet.",
     "startAssessment": "Start assessment",
-    "generateDemoData": "Generate Demo Data",
     "forAudit": "For audit",
     "needDocumentation": "Need documentation",
     "controlsWithoutEvidence": "Controls Without Evidence",
@@ -256,9 +254,6 @@
     "allGaps": "All Gaps",
     "notAnswered": "Not answered",
     "showingGaps": "Showing {{filtered}} of {{total}} gaps",
-    "maturityByOwner": "Maturity by Owner",
-    "maturityByCategory": "Maturity by Category",
-    "lowReadinessSubcategories": "Subcategories with Low Readiness",
     "gapsByCriticality": "Gaps by Criticality",
     "gapsBySubcategory": "Gaps by Subcategory",
     "questionsByDomain": "Questions by Domain",
@@ -304,7 +299,6 @@
     "gapsIdentifiedCount": "Gaps Identified ({{count}})",
     "gapsByDomain": "Gaps by Domain ({{count}})",
     "showingOfGaps": "Showing {{showing}} of {{total}} gaps",
-    "startEvaluation": "Start Evaluation",
     "close": "Close"
   },
   "assessment": {
@@ -400,10 +394,9 @@
     "defaultAssessmentName": "Security Maturity Assessment",
     "selectAtLeastOne": "Select at least one framework",
     "settingsSaved": "Settings saved successfully",
-    "exportSuccess": "Data exported successfully",
+    "exportSuccess": "Configuration exported successfully",
     "exportError": "Error exporting data",
     "answersCleared": "Answers cleared successfully",
-    "demoGenerated": "Demo data generated",
     "activeFrameworks": "Active Frameworks",
     "ofAvailable": "of {{count}} available",
     "lastUpdate": "Last Update",
@@ -428,10 +421,6 @@
     "exportBackup": "Export & Backup",
     "exportDescription": "Export answers and settings to an Excel file.",
     "exportToExcel": "Export to Excel (.xlsx)",
-    "generateDemoDescription": "Generate sample data to explore the dashboards.",
-    "generateDemoData": "Generate Demo Data",
-    "generateDemoTitle": "Generate demo data?",
-    "generateDemoDescription2": "This action will replace all existing answers with simulated data.",
     "generateData": "Generate Data",
     "dangerZone": "Danger Zone",
     "dangerZoneDesc": "Irreversible actions that affect your data",
@@ -542,7 +531,6 @@
     "iconKey": "Key",
     "importDomain": "Import Domain",
     "exportDomain": "Export Domain",
-    "exportSuccess": "Configuration exported successfully",
     "importSuccess": "Domain imported successfully!",
     "importStats": "{{domains}} areas, {{subcategories}} subcategories, {{frameworks}} frameworks, {{questions}} questions",
     "invalidFile": "Invalid file",
@@ -695,7 +683,7 @@
     "downloadTemplateButton": "Download Template",
     "questionsFile": "Questions File",
     "selectCsvExcel": "Select CSV/Excel File",
-    "supportedFormats": "Supported formats: .csv, .xlsx, .xls",
+    "supportedFormats": "Supported format: .xlsx",
     "totalRows": "Total Rows",
     "valid": "Valid",
     "withErrors": "With Errors",
@@ -809,8 +797,9 @@
     "accountStatus": "Account Status",
     "userId": "User ID",
     "emailVerified": "Email Verified",
-    "lastAccess": "Last Access"
-  },
+    "lastAccess": "Last Access",
+  
+    "inlineSecretsDisabled": "Inline API keys are disabled by policy. Enable VITE_ALLOW_INLINE_SECRETS or use Web Speech API."},
   "securityDomains": {
     "title": "Security Domain",
     "switch": "Switch Security Domain",
@@ -831,14 +820,12 @@
     "viewDashboard": "View Dashboard",
     "getStarted": "Start Assessment",
     "selectFrameworks": "Select Frameworks",
-    "demoData": "Demo Data",
-    "tryDemo": "Try with Demo",
     "gettingStarted": "Getting Started",
     "howToUse": "How to Use the Tool",
     "howToUseDesc": "Follow these 4 simple steps to explore all features",
     "quickTip": "Quick Tip",
     "tipLabel": "Tip:",
-    "tipText": "Use demo data to understand how it works before starting your real assessment.",
+    "tipText": "Ensure the initial catalog is imported by the administrator before starting assessments.",
     "mainFeatures": "Main Features",
     "mainFeaturesDesc": "Everything you need for a complete AI security assessment",
     "whyUse": "Why use this tool?",
@@ -855,8 +842,8 @@
     "step1Action": "Go to Assessment",
     "step2Title": "Start Assessment",
     "step2Desc": "After selecting frameworks, click \"Start Assessment\" to begin answering filtered questions.",
-    "step3Title": "Generate Demo Data",
-    "step3Desc": "Click the \"Demo Data\" button to automatically fill in example answers and see the tool in action.",
+    "step3Title": "Configure frameworks",
+    "step3Desc": "Define frameworks and assessment parameters for your organization.",
     "step4Title": "Explore Dashboards",
     "step4Desc": "Check the Executive, GRC, and Specialist dashboards to see metrics, critical gaps, and improvement roadmap.",
     "step4Action": "View Dashboards",
@@ -1106,7 +1093,120 @@
     "personaGRC": "GRC",
     "personaGRCDesc": "Security Manager - Coverage, evidence, and auditability",
     "personaSpecialist": "Specialist",
-    "personaSpecialistDesc": "Architect / Engineer - Technical details and implementation"
+    "personaSpecialistDesc": "Architect / Engineer - Technical details and implementation",
+    "dashboardLayoutTab": "Dashboards",
+    "dashboardLayoutTitle": "Dashboard Layouts",
+    "dashboardLayoutDescription": "Customize widgets and order for each dashboard.",
+    "dashboardLayoutSelect": "Select dashboard",
+    "dashboardLayoutScope": "Applies to all users",
+    "dashboardLayoutSelected": "Selected widgets",
+    "dashboardLayoutEmpty": "No widgets selected",
+    "dashboardLayoutAvailable": "Available widgets",
+    "dashboardLayoutNoAvailable": "All widgets are already added",
+    "dashboardLayoutAdd": "Add",
+    "dashboardLayoutReset": "Reset to default",
+    "dashboardLayoutDiscard": "Discard changes",
+    "dashboardLayoutSave": "Save layout",
+    "dashboardLayoutSaving": "Saving...",
+    "dashboardLayoutSaved": "Dashboard layout saved",
+    "dashboardLayoutSaveError": "Error saving dashboard layout",
+    "dashboardLayoutDefaultApplied": "Default layout restored",
+    "dashboardLayoutDiscarded": "Changes discarded",
+    "dashboardWidgets": {
+      "executiveHeader": {
+        "label": "Executive header",
+        "description": "Title, selector, and export actions"
+      },
+      "executiveKpis": {
+        "label": "Executive KPIs",
+        "description": "Score, gaps, coverage, and evidence readiness"
+      },
+      "executiveIndicators": {
+        "label": "Domain indicators",
+        "description": "Domain-specific metrics"
+      },
+      "executiveCharts": {
+        "label": "Executive charts",
+        "description": "Radar, domain bars, and risk distribution"
+      },
+      "executiveFrameworkCoverage": {
+        "label": "Framework coverage",
+        "description": "Coverage per framework"
+      },
+      "executiveFrameworkCategories": {
+        "label": "Framework category maturity",
+        "description": "Category score grid"
+      },
+      "executiveRoadmap": {
+        "label": "Strategic roadmap",
+        "description": "90-day priorities"
+      },
+      "executiveCriticalGaps": {
+        "label": "Critical gaps list",
+        "description": "Filtered gaps summary"
+      },
+      "grcHeader": {
+        "label": "GRC header",
+        "description": "Title, selector, and export actions"
+      },
+      "grcStatusPills": {
+        "label": "Status filters",
+        "description": "Quick status pills"
+      },
+      "grcKpis": {
+        "label": "GRC KPIs",
+        "description": "Coverage, evidence, score, and gaps"
+      },
+      "grcFrameworkCoverage": {
+        "label": "Framework coverage",
+        "description": "Framework maturity and coverage detail"
+      },
+      "grcIndicators": {
+        "label": "Domain indicators",
+        "description": "Domain-specific metrics"
+      },
+      "grcRoadmap": {
+        "label": "Strategic roadmap",
+        "description": "Priority actions"
+      },
+      "grcTabs": {
+        "label": "GRC detail tabs",
+        "description": "Domains, frameworks, gaps, and ownership"
+      },
+      "specialistHeader": {
+        "label": "Specialist header",
+        "description": "Title, selector, and export actions"
+      },
+      "specialistFilters": {
+        "label": "Quick filters",
+        "description": "Criticality and response filters"
+      },
+      "specialistKpis": {
+        "label": "Specialist KPIs",
+        "description": "Questions, coverage, missing and partial controls"
+      },
+      "specialistIndicators": {
+        "label": "Domain indicators",
+        "description": "Domain-specific metrics"
+      },
+      "specialistRoadmap": {
+        "label": "Technical roadmap",
+        "description": "Priority fixes by window"
+      },
+      "specialistTabs": {
+        "label": "Specialist detail tabs",
+        "description": "Gaps, heatmap, domains, and frameworks"
+      },
+      "periodComparison": {
+        "label": "Period comparison",
+        "description": "Compare current vs previous period"
+      },
+      "maturityTrend": {
+        "label": "Maturity trend",
+        "description": "Historical trend and projections"
+      }
+    }
+
   },
   "domainFunctions": {
     "aiGovern": "Govern",
@@ -1165,7 +1265,8 @@
       "framework": "Framework",
       "question": "Question",
       "setting": "Setting",
-      "answer": "Answer"
+      "answer": "Answer",
+      "catalog": "Catalog"
     },
     "device": {
       "all": "All Devices",
@@ -1211,9 +1312,11 @@
     "format": "Format",
     "auth": "Authentication",
     "authentication": "Authentication",
-    "headerName": "Header Name",
-    "tokenValue": "Token Value",
-    "dataToInclude": "Data to Include",
+      "headerName": "Header Name",
+      "tokenValue": "Token Value",
+      "secretReferenceHint": "Use env:NAME, file:/path, or secret:ref to reference secrets.",
+    "secretReferenceRequired": "Use env:NAME, file:/path, or secret:ref for secrets.",
+      "dataToInclude": "Data to Include",
     "includeIp": "IP Address",
     "includeGeo": "Geolocation",
     "includeDevice": "Device",
@@ -1238,7 +1341,8 @@
     "testSuccess": "Test sent successfully",
     "testError": "Integration test failed",
     "validation": {
-      "required": "Name and endpoint are required"
+      "required": "Name and endpoint are required",
+      "authRequired": "Authentication value is required for this auth type."
     }
   },
   "siemHealth": {
@@ -1345,9 +1449,11 @@
     "enabled": "Enabled",
     "temperature": "Temperature",
     "maxTokens": "Max Tokens",
-    "systemPrompt": "Custom System Prompt",
-    "keepCurrentKey": "Leave blank to keep current key",
-    "providerUpdated": "Provider updated",
+      "systemPrompt": "Custom System Prompt",
+      "keepCurrentKey": "Leave blank to keep current key",
+      "secretReferenceHint": "Use env:NAME, file:/path, or secret:ref to reference secrets.",
+    "secretReferenceRequired": "Use env:NAME, file:/path, or secret:ref for secrets.",
+      "providerUpdated": "Provider updated",
     "providerAdded": "Provider added",
     "providerRemoved": "Provider removed",
     "defaultUpdated": "Default provider updated",
@@ -1422,11 +1528,6 @@
     "export": {
       "title": "Export Data",
       "description": "Export answers and settings to Excel",
-      "section": "Export & Backup"
-    },
-    "demoData": {
-      "title": "Demo Data",
-      "description": "Generate sample data to explore dashboards",
       "section": "Export & Backup"
     },
     "clearAnswers": {

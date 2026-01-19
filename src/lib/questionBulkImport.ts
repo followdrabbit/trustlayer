@@ -6,6 +6,21 @@
 
 import ExcelJS from 'exceljs';
 import { supabase } from '@/integrations/supabase/client';
+import { scanXlsxFile } from '@/lib/xlsxSecurity';
+
+const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const MAX_IMPORT_FILE_BYTES = Number.parseInt(
+  import.meta.env.VITE_IMPORT_MAX_FILE_BYTES || '',
+  10
+) || 5 * 1024 * 1024;
+const MAX_IMPORT_CELL_CHARS = Number.parseInt(
+  import.meta.env.VITE_IMPORT_MAX_CELL_CHARS || '',
+  10
+) || 2000;
+const MAX_IMPORT_ROWS = Number.parseInt(
+  import.meta.env.VITE_IMPORT_MAX_ROWS || '',
+  10
+) || 5000;
 
 // Interfaces
 export interface BulkQuestionRow {
@@ -72,11 +87,28 @@ const COLUMN_MAPPINGS: Record<string, string[]> = {
   frameworks: ['frameworks', 'framework', 'framework_refs', 'referencias']
 };
 
-// Helper to read workbook from file
-async function readWorkbookFromFile(file: File): Promise<ExcelJS.Workbook> {
-  const arrayBuffer = await file.arrayBuffer();
+function getFileExtension(filename: string): string {
+  const match = filename.toLowerCase().match(/\.[a-z0-9]+$/);
+  return match ? match[0] : '';
+}
+
+function hasFormulaCells(worksheet: ExcelJS.Worksheet): boolean {
+  let hasFormula = false;
+  worksheet.eachRow((row) => {
+    row.eachCell((cell) => {
+      const cellValue = cell.value as { formula?: string } | null;
+      if (cellValue && typeof cellValue === 'object' && 'formula' in cellValue) {
+        hasFormula = true;
+      }
+    });
+  });
+  return hasFormula;
+}
+
+// Helper to read workbook from bytes
+async function readWorkbookFromBytes(data: Uint8Array): Promise<ExcelJS.Workbook> {
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(arrayBuffer);
+  await workbook.xlsx.load(data);
   return workbook;
 }
 
@@ -176,10 +208,48 @@ export async function validateBulkImportFile(
   securityDomainId: string
 ): Promise<BulkImportValidation> {
   try {
-    const workbook = await readWorkbookFromFile(file);
+    if (file.size > MAX_IMPORT_FILE_BYTES) {
+      return {
+        isValid: false,
+        totalRows: 0,
+        validRows: 0,
+        errors: [`Arquivo muito grande. Limite ${Math.round(MAX_IMPORT_FILE_BYTES / (1024 * 1024))}MB`],
+        warnings: [],
+        questions: [],
+        columnMapping: {}
+      };
+    }
+
+    const extension = getFileExtension(file.name);
+    if (extension !== '.xlsx') {
+      return {
+        isValid: false,
+        totalRows: 0,
+        validRows: 0,
+        errors: ['Formato invalido. Use arquivo .xlsx'],
+        warnings: [],
+        questions: [],
+        columnMapping: {}
+      };
+    }
+
+    const scan = await scanXlsxFile(file);
+    if (scan.errors.length > 0) {
+      return {
+        isValid: false,
+        totalRows: 0,
+        validRows: 0,
+        errors: scan.errors,
+        warnings: scan.warnings,
+        questions: [],
+        columnMapping: {}
+      };
+    }
+
+    const workbook = await readWorkbookFromBytes(scan.bytes);
     
     const errors: string[] = [];
-    const warnings: string[] = [];
+    const warnings: string[] = [...scan.warnings];
     const questions: ParsedQuestion[] = [];
     const columnMapping: Record<string, string> = {};
 
@@ -197,6 +267,22 @@ export async function validateBulkImportFile(
       };
     }
 
+    if (file.type && file.type !== XLSX_MIME_TYPE) {
+      warnings.push('Tipo MIME inesperado para arquivo XLSX');
+    }
+
+    if (hasFormulaCells(worksheet)) {
+      return {
+        isValid: false,
+        totalRows: 0,
+        validRows: 0,
+        errors: ['Formulas nao sao permitidas no arquivo XLSX'],
+        warnings,
+        questions: [],
+        columnMapping: {}
+      };
+    }
+
     const rows = sheetToJson<any>(worksheet);
     const headers = getHeaders(worksheet);
 
@@ -207,6 +293,41 @@ export async function validateBulkImportFile(
         validRows: 0,
         errors: ['Arquivo deve conter cabeçalho e pelo menos uma linha de dados'],
         warnings: [],
+        questions: [],
+        columnMapping: {}
+      };
+    }
+
+    if (rows.length > MAX_IMPORT_ROWS) {
+      return {
+        isValid: false,
+        totalRows: rows.length,
+        validRows: 0,
+        errors: [`Arquivo excede o limite de linhas (${rows.length}/${MAX_IMPORT_ROWS})`],
+        warnings,
+        questions: [],
+        columnMapping: {}
+      };
+    }
+
+    const lengthErrors: string[] = [];
+    rows.forEach((row, index) => {
+      Object.values(row).forEach((value) => {
+        if (value === null || value === undefined) return;
+        const textValue = value.toString();
+        if (textValue.length > MAX_IMPORT_CELL_CHARS) {
+          lengthErrors.push(`Linha ${index + 2}: conteudo muito longo`);
+        }
+      });
+    });
+
+    if (lengthErrors.length > 0) {
+      return {
+        isValid: false,
+        totalRows: rows.length,
+        validRows: 0,
+        errors: lengthErrors.slice(0, 10),
+        warnings,
         questions: [],
         columnMapping: {}
       };

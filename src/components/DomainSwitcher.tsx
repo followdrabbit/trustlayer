@@ -13,6 +13,8 @@ import {
 } from '@/lib/securityDomains';
 import { getFrameworksBySecurityDomain } from '@/lib/frameworks';
 import { cn } from '@/lib/utils';
+import { canEditAssessments } from '@/lib/roles';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -42,6 +44,9 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export function DomainSwitcher({ className, showLabel = true, variant = 'default' }: DomainSwitcherProps) {
   const { selectedSecurityDomain, setSelectedSecurityDomain } = useAnswersStore();
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
+  const isReadOnly = !canEdit;
   const [domains, setDomains] = useState<SecurityDomain[]>(DEFAULT_SECURITY_DOMAINS);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isChanging, setIsChanging] = useState(false);
@@ -66,6 +71,7 @@ export function DomainSwitcher({ className, showLabel = true, variant = 'default
   const IconComponent = currentDomain ? (iconMap[currentDomain.icon] || Shield) : Shield;
 
   const handleSelectDomain = async (domain: SecurityDomain) => {
+    if (isReadOnly) return;
     if (domain.domainId !== selectedSecurityDomain) {
       setIsChanging(true);
       try {
@@ -102,8 +108,11 @@ export function DomainSwitcher({ className, showLabel = true, variant = 'default
               displayInfo?.textClass,
               displayInfo?.borderClass,
               isChanging && "opacity-70",
+              isReadOnly && "opacity-60 cursor-not-allowed",
               className
             )}
+            disabled={isReadOnly}
+            aria-disabled={isReadOnly}
           >
             <IconComponent className={cn("h-3 w-3 sm:h-3.5 sm:w-3.5", isChanging && "animate-pulse")} />
             <span className="text-[10px] sm:text-xs font-medium">{currentDomain?.shortName}</span>
@@ -122,7 +131,8 @@ export function DomainSwitcher({ className, showLabel = true, variant = 'default
               <DropdownMenuItem 
                 key={domain.domainId}
                 onClick={() => handleSelectDomain(domain)}
-                className="cursor-pointer"
+                className={cn("cursor-pointer", isReadOnly && "cursor-not-allowed opacity-60")}
+                disabled={isReadOnly}
               >
                 <div className={cn(
                   "flex items-center gap-2 w-full",
@@ -152,7 +162,9 @@ export function DomainSwitcher({ className, showLabel = true, variant = 'default
           <Button 
             variant="ghost" 
             size="sm"
-            className={cn("gap-1.5", className)}
+            className={cn("gap-1.5", isReadOnly && "opacity-60 cursor-not-allowed", className)}
+            disabled={isReadOnly}
+            aria-disabled={isReadOnly}
           >
             <IconComponent className={cn("h-4 w-4", displayInfo?.textClass)} />
             {currentDomain?.shortName}
@@ -171,7 +183,8 @@ export function DomainSwitcher({ className, showLabel = true, variant = 'default
               <DropdownMenuItem 
                 key={domain.domainId}
                 onClick={() => handleSelectDomain(domain)}
-                className="cursor-pointer"
+                className={cn("cursor-pointer", isReadOnly && "cursor-not-allowed opacity-60")}
+                disabled={isReadOnly}
               >
                 <div className={cn(
                   "flex items-center gap-2 w-full",
@@ -203,8 +216,11 @@ export function DomainSwitcher({ className, showLabel = true, variant = 'default
           className={cn(
             "gap-2 border-2",
             displayInfo?.borderClass,
+            isReadOnly && "opacity-60 cursor-not-allowed",
             className
           )}
+          disabled={isReadOnly}
+          aria-disabled={isReadOnly}
         >
           <div className={cn(
             "p-1 rounded",
@@ -231,7 +247,8 @@ export function DomainSwitcher({ className, showLabel = true, variant = 'default
             <DropdownMenuItem 
               key={domain.domainId}
               onClick={() => handleSelectDomain(domain)}
-              className="cursor-pointer py-2"
+              className={cn("cursor-pointer py-2", isReadOnly && "cursor-not-allowed opacity-60")}
+              disabled={isReadOnly}
             >
               <div className={cn(
                 "flex items-start gap-3 w-full",

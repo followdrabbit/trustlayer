@@ -19,15 +19,20 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { getSecurityDomainById, DEFAULT_SECURITY_DOMAINS, SecurityDomain } from '@/lib/securityDomains';
 import { ClipboardCheck } from 'lucide-react';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canEditAssessments } from '@/lib/roles';
 
 type AssessmentStep = 'domain' | 'framework' | 'questions';
 
 export default function Assessment() {
   const { t } = useTranslation();
-  const { answers, setAnswer, clearAnswers, importAnswers, generateDemoData, isLoading, selectedFrameworks, selectedSecurityDomain } = useAnswersStore();
+  const { role, loading: roleLoading } = useUserRole();
+  const { answers, setAnswer, clearAnswers, importAnswers, isLoading, selectedFrameworks, selectedSecurityDomain, enabledFrameworks } = useAnswersStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedQuestions, setExpandedQuestions] = useState<Set<string>>(new Set());
+  const canEditAnswers = !roleLoading && canEditAssessments(role);
+  const isReadOnly = !roleLoading && !canEditAssessments(role);
   
   // Determine initial step based on current state
   const getInitialStep = (): AssessmentStep => {
@@ -61,15 +66,15 @@ export default function Assessment() {
 
   // Filter questions based on selected frameworks AND security domain
   const filteredQuestions = useMemo(() => {
-    if (selectedFrameworks.length === 0) return [];
+    if (effectiveFrameworkIds.length === 0) return [];
     return questions.filter(q => {
       // Check if question belongs to selected frameworks
-      const belongsToFramework = questionBelongsToFrameworks(q.frameworks, selectedFrameworks);
+      const belongsToFramework = questionBelongsToFrameworks(q.frameworks, effectiveFrameworkIds);
       // Check if question belongs to selected security domain (if set)
       const belongsToDomain = !selectedSecurityDomain || q.securityDomainId === selectedSecurityDomain;
       return belongsToFramework && belongsToDomain;
     });
-  }, [selectedFrameworks, selectedSecurityDomain]);
+  }, [effectiveFrameworkIds, selectedSecurityDomain]);
 
   // Group filtered questions by domain and subcategory
   const groupedQuestions = useMemo(() => {
@@ -175,6 +180,7 @@ export default function Assessment() {
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canEditAnswers) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -192,6 +198,7 @@ export default function Assessment() {
   };
 
   const handleClear = async () => {
+    if (!canEditAnswers) return;
     if (confirm(t('assessment.clearConfirm'))) {
       await clearAnswers();
       toast.success(t('assessment.clearSuccess'));
@@ -214,8 +221,14 @@ export default function Assessment() {
     }
   };
 
+  const effectiveFrameworkIds = useMemo(() => {
+    if (selectedFrameworks.length > 0) return selectedFrameworks;
+    if (isReadOnly && enabledFrameworks.length > 0) return enabledFrameworks;
+    return selectedFrameworks;
+  }, [selectedFrameworks, enabledFrameworks, isReadOnly]);
+
   // Get framework names for display
-  const selectedFrameworkNames = selectedFrameworks
+  const selectedFrameworkNames = effectiveFrameworkIds
     .map(id => getFrameworkById(id)?.shortName)
     .filter(Boolean);
 
@@ -282,7 +295,7 @@ export default function Assessment() {
               </div>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
-              <Button onClick={() => setCurrentStep('framework')} variant="outline" size="sm">
+              <Button onClick={() => setCurrentStep('framework')} variant="outline" size="sm" disabled={!canEditAnswers}>
                 {t('common.changeFrameworks')}
               </Button>
               <Button onClick={handleExport} variant="outline" size="sm" className="hidden sm:inline-flex">
@@ -345,16 +358,13 @@ export default function Assessment() {
       {/* Secondary actions bar */}
       <div className="flex flex-wrap items-center gap-2 mb-8 pb-4 border-b">
         <span className="text-sm text-muted-foreground mr-2">{t('common.actions')}:</span>
-        <Button onClick={() => fileInputRef.current?.click()} variant="ghost" size="sm">
+        <Button onClick={() => fileInputRef.current?.click()} variant="ghost" size="sm" disabled={!canEditAnswers}>
           {t('common.importXLSX')}
         </Button>
-        <Button onClick={generateDemoData} variant="ghost" size="sm">
-          {t('common.demoData')}
-        </Button>
-        <Button onClick={handleClear} variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+        <Button onClick={handleClear} variant="ghost" size="sm" className="text-destructive hover:text-destructive" disabled={!canEditAnswers}>
           {t('common.clearAll')}
         </Button>
-        <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" />
+        <input ref={fileInputRef} type="file" accept=".xlsx,.xls" onChange={handleImport} className="hidden" disabled={!canEditAnswers} />
       </div>
 
       {/* Questions grouped by Domain > Subcategory */}
@@ -486,10 +496,15 @@ export default function Assessment() {
                                     <button
                                       key={opt.value}
                                       data-value={opt.value}
-                                      onClick={() => setAnswer(q.questionId, { response: opt.value as any })}
+                                      onClick={() => {
+                                        if (!canEditAnswers) return;
+                                        setAnswer(q.questionId, { response: opt.value as any });
+                                      }}
+                                      disabled={!canEditAnswers}
                                       className={cn(
                                         "py-2.5 px-3 text-sm font-medium rounded-lg border-2 transition-all duration-150",
                                         "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50",
+                                        !canEditAnswers && "opacity-60 cursor-not-allowed",
                                         answer?.response === opt.value 
                                           ? opt.value === 'Sim' ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300" :
                                             opt.value === 'Parcial' ? "border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300" :
@@ -522,10 +537,15 @@ export default function Assessment() {
                                       <button
                                         key={opt.value}
                                         data-value={opt.value}
-                                        onClick={() => setAnswer(q.questionId, { evidenceOk: opt.value as any })}
+                                        onClick={() => {
+                                          if (!canEditAnswers) return;
+                                          setAnswer(q.questionId, { evidenceOk: opt.value as any });
+                                        }}
+                                        disabled={!canEditAnswers}
                                         className={cn(
                                           "flex-1 py-2 px-3 text-sm font-medium rounded-lg border-2 transition-all",
                                           "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary/50",
+                                          !canEditAnswers && "opacity-60 cursor-not-allowed",
                                           answer?.evidenceOk === opt.value 
                                             ? opt.value === 'Sim' ? "border-green-500 bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300" :
                                               opt.value === 'Parcial' ? "border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300" :
@@ -597,9 +617,13 @@ export default function Assessment() {
                                     </label>
                                     <Textarea
                                       value={answer?.notes || ''}
-                                      onChange={e => setAnswer(q.questionId, { notes: e.target.value })}
+                                      onChange={e => {
+                                        if (!canEditAnswers) return;
+                                        setAnswer(q.questionId, { notes: e.target.value });
+                                      }}
                                       placeholder={t('assessment.notesPlaceholder')}
-                                      className="min-h-[80px] resize-y"
+                                      className={cn("min-h-[80px] resize-y", !canEditAnswers && "opacity-60 cursor-not-allowed")}
+                                      readOnly={!canEditAnswers}
                                     />
                                   </div>
                                 </div>

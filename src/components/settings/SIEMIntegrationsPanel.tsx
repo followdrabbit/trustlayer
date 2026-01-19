@@ -52,6 +52,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { validateExternalUrl } from '@/lib/urlValidation';
+import { isInlineSecretAllowed, isSecretReference } from '@/lib/secretInput';
 import {
   getSIEMIntegrations,
   getSIEMStats,
@@ -175,6 +177,25 @@ export function SIEMIntegrationsPanel() {
       return;
     }
 
+    const endpointCheck = validateExternalUrl(formData.endpointUrl);
+    if (!endpointCheck.ok) {
+      toast.error(t('siem.validation.invalidEndpoint', 'Endpoint invalido'));
+      return;
+    }
+    const authValue = formData.authValue?.trim() || '';
+    if (formData.authType !== 'none') {
+      const requiresAuthValue =
+        !selectedIntegration || formData.authType !== selectedIntegration.authType;
+      if (requiresAuthValue && !authValue) {
+        toast.error(t('siem.validation.authRequired', 'Authentication value is required.'));
+        return;
+      }
+      if (authValue && !isSecretReference(authValue) && !isInlineSecretAllowed()) {
+        toast.error(t('siem.secretReferenceRequired', 'Use env:NAME, file:/path, or secret:ref for secrets.'));
+        return;
+      }
+    }
+
     try {
       if (selectedIntegration) {
         const result = await updateSIEMIntegration(selectedIntegration.id, formData);
@@ -225,6 +246,11 @@ export function SIEMIntegrationsPanel() {
   };
 
   const handleTest = async (integration: SIEMIntegration) => {
+    const endpointCheck = validateExternalUrl(integration.endpointUrl);
+    if (!endpointCheck.ok) {
+      toast.error(t('siem.validation.invalidEndpoint', 'Endpoint invalido'));
+      return;
+    }
     setTesting(integration.id);
     try {
       const result = await testSIEMIntegration(integration.id);
@@ -565,12 +591,17 @@ export function SIEMIntegrationsPanel() {
               </div>
 
               {formData.authType !== 'none' && (
-                <Input
-                  type="password"
-                  placeholder={formData.authType === 'basic' ? 'base64(user:pass)' : t('siem.tokenValue')}
-                  value={formData.authValue}
-                  onChange={(e) => setFormData({ ...formData, authValue: e.target.value })}
-                />
+                <div className="space-y-2">
+                  <Input
+                    type="password"
+                    placeholder={formData.authType === 'basic' ? 'base64(user:pass)' : t('siem.tokenValue')}
+                    value={formData.authValue}
+                    onChange={(e) => setFormData({ ...formData, authValue: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('siem.secretReferenceHint', 'Use env:NAME, file:/path, or secret:ref to reference secrets.')}
+                  </p>
+                </div>
               )}
             </div>
 

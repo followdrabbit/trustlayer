@@ -5,10 +5,12 @@ import { SecurityDomain, getAllSecurityDomains, DOMAIN_COLORS } from '@/lib/secu
 import { 
   exportDomainConfig, 
   downloadDomainConfig, 
+  downloadDomainConfigTemplate,
   validateImportFile, 
   importDomainConfig,
   DomainConfigExport,
-  ValidationResult
+  ValidationResult,
+  DomainImportPreviewItem
 } from '@/lib/domainConfigExport';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -26,7 +28,7 @@ import { Separator } from '@/components/ui/separator';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
-import { Brain, Cloud, Code, Shield, Lock, Database, Server, Key, Pencil, Save, Plus, Trash2, AlertTriangle, FolderTree, BookOpen, HelpCircle, Download, Upload, FileJson, CheckCircle2, XCircle, Search, X } from 'lucide-react';
+import { Brain, Cloud, Code, Shield, Lock, Database, Server, Key, Pencil, Save, Plus, Trash2, AlertTriangle, FolderTree, BookOpen, HelpCircle, Download, Upload, FileSpreadsheet, CheckCircle2, XCircle, Search, X } from 'lucide-react';
 import { questions } from '@/lib/dataset';
 import { frameworks } from '@/lib/frameworks';
 import { CardActionButtons, createEditAction, createDeleteAction, createExportAction } from './CardActionButtons';
@@ -115,8 +117,11 @@ export function DomainManagement() {
     importQuestions: true
   });
   const [importing, setImporting] = useState(false);
+  const IMPORT_RATE_LIMIT_KEY = 'domain_import_last_ts';
+  const IMPORT_RATE_LIMIT_MS = 30_000;
   const [exporting, setExporting] = useState<string | null>(null);
   const importFileRef = useRef<HTMLInputElement>(null);
+  const importPreview = importValidation?.preview ?? null;
   
   const [editFormData, setEditFormData] = useState({
     domainName: '',
@@ -441,6 +446,16 @@ export function DomainManagement() {
     }
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      await downloadDomainConfigTemplate();
+      toast.success(t('settings.downloadTemplate'));
+    } catch (error) {
+      console.error('Error downloading template:', error);
+      toast.error(t('common.error'));
+    }
+  };
+
   // Handle import file selection
   const handleImportFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -472,6 +487,12 @@ export function DomainManagement() {
   const handleImport = async () => {
     if (!importConfig) return;
 
+    const lastImport = Number(sessionStorage.getItem(IMPORT_RATE_LIMIT_KEY) || '0');
+    if (Date.now() - lastImport < IMPORT_RATE_LIMIT_MS) {
+      toast.error('Importacao recente. Aguarde alguns segundos.');
+      return;
+    }
+
     setImporting(true);
     try {
       const result = await importDomainConfig(importConfig, {
@@ -482,6 +503,7 @@ export function DomainManagement() {
       });
 
       if (result.success) {
+        sessionStorage.setItem(IMPORT_RATE_LIMIT_KEY, String(Date.now()));
         toast.success(t('settings.importSuccess'));
         setShowImportDialog(false);
         setImportConfig(null);
@@ -513,6 +535,26 @@ export function DomainManagement() {
       importQuestions: true
     });
   };
+
+  const renderPreviewList = (title: string, items: DomainImportPreviewItem[]) => (
+    <div className="space-y-2">
+      <div className="text-xs font-medium uppercase text-muted-foreground">{title}</div>
+      {items.length === 0 ? (
+        <div className="text-xs text-muted-foreground">{t('common.none')}</div>
+      ) : (
+        <div className="space-y-1">
+          {items.map((item, index) => (
+            <div key={`${item.id}-${index}`} className="text-xs">
+              <div className="font-medium line-clamp-1">{item.label}</div>
+              {item.id && (
+                <div className="text-muted-foreground line-clamp-1">{item.id}</div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 
   const saveEditedDomain = async () => {
     if (!editingDomain) return;
@@ -685,13 +727,17 @@ export function DomainManagement() {
               <input
                 ref={importFileRef}
                 type="file"
-                accept=".json"
+                accept=".json,.xlsx"
                 onChange={handleImportFileSelect}
                 className="hidden"
               />
               <Button variant="ghost" size="sm" onClick={() => importFileRef.current?.click()}>
                 <Upload className="h-4 w-4 mr-2" />
                 Importar
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleDownloadTemplate}>
+                <Download className="h-4 w-4 mr-2" />
+                {t('settings.downloadTemplateButton')}
               </Button>
               <Button variant="outline" onClick={openCreateDialog}>
                 <Plus className="h-4 w-4 mr-2" />
@@ -1303,7 +1349,7 @@ export function DomainManagement() {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileJson className="h-5 w-5" />
+              <FileSpreadsheet className="h-5 w-5" />
               Importar Configuração de Domínio
             </DialogTitle>
             <DialogDescription>
@@ -1316,7 +1362,7 @@ export function DomainManagement() {
               {/* Source Info */}
               <div className="p-3 rounded-lg bg-muted/50 border">
                 <div className="flex items-center gap-2 mb-2">
-                  <FileJson className="h-4 w-4 text-muted-foreground" />
+                  <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium text-sm">Arquivo de Origem</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-sm">
@@ -1363,6 +1409,21 @@ export function DomainManagement() {
                       <li key={i}>• {w}</li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {importPreview && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    {t('settings.preview')}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {renderPreviewList(t('settings.areas'), importPreview.samples.taxonomyDomains)}
+                    {renderPreviewList(t('settings.subcategories'), importPreview.samples.subcategories)}
+                    {renderPreviewList(t('settings.frameworks'), importPreview.samples.frameworks)}
+                    {renderPreviewList(t('assessment.questions'), importPreview.samples.questions)}
+                  </div>
                 </div>
               )}
 

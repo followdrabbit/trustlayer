@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
+import { canEditAssessments } from '@/lib/roles';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronDown, AlertTriangle, Lock, Info, Settings } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -38,6 +40,9 @@ const categoryColors: Record<string, string> = {
 
 export function FrameworkSelector({ onStartAssessment, onBackToDomainSelector }: FrameworkSelectorProps) {
   const { enabledFrameworks, selectedFrameworks, setSelectedFrameworks, selectedSecurityDomain } = useAnswersStore();
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
+  const isReadOnly = !canEdit;
   const [currentDomain, setCurrentDomain] = useState<SecurityDomain | null>(null);
   const [allDomains, setAllDomains] = useState<SecurityDomain[]>([]);
   const [showUnavailable, setShowUnavailable] = useState(false);
@@ -104,6 +109,7 @@ export function FrameworkSelector({ onStartAssessment, onBackToDomainSelector }:
   const techFrameworks = availableFrameworks.filter(f => f.category === 'tech-focused');
 
   const toggleFramework = (frameworkId: string) => {
+    if (isReadOnly) return;
     setLocalSelected(prev => 
       prev.includes(frameworkId)
         ? prev.filter(id => id !== frameworkId)
@@ -112,24 +118,34 @@ export function FrameworkSelector({ onStartAssessment, onBackToDomainSelector }:
   };
 
   const handleStart = async () => {
+    if (isReadOnly) {
+      onStartAssessment();
+      return;
+    }
     await setSelectedFrameworks(localSelected);
     onStartAssessment();
   };
 
   const selectAll = () => {
+    if (isReadOnly) return;
     setLocalSelected(availableFrameworks.map(f => f.frameworkId));
   };
 
   const selectCore = () => {
+    if (isReadOnly) return;
     setLocalSelected(availableFrameworks.filter(f => f.category === 'core').map(f => f.frameworkId));
   };
 
   const clearAll = () => {
+    if (isReadOnly) return;
     setLocalSelected([]);
   };
 
   // Get domain display info for header styling
   const domainDisplayInfo = currentDomain ? getDomainDisplayInfo(currentDomain) : null;
+  const effectiveSelectedCount = isReadOnly && localSelected.length === 0
+    ? availableFrameworks.length
+    : localSelected.length;
 
   // If no frameworks are enabled by admin for this domain, show message
   if (availableFrameworks.length === 0) {
@@ -188,13 +204,13 @@ export function FrameworkSelector({ onStartAssessment, onBackToDomainSelector }:
 
       {/* Quick actions */}
       <div className="flex justify-center gap-2">
-        <Button variant="outline" size="sm" onClick={selectCore}>
+        <Button variant="outline" size="sm" onClick={selectCore} disabled={isReadOnly}>
           Apenas Fundamentais
         </Button>
-        <Button variant="outline" size="sm" onClick={selectAll}>
+        <Button variant="outline" size="sm" onClick={selectAll} disabled={isReadOnly}>
           Selecionar Todos
         </Button>
-        <Button variant="ghost" size="sm" onClick={clearAll}>
+        <Button variant="ghost" size="sm" onClick={clearAll} disabled={isReadOnly}>
           Limpar
         </Button>
       </div>
@@ -215,6 +231,7 @@ export function FrameworkSelector({ onStartAssessment, onBackToDomainSelector }:
                 framework={fw}
                 selected={localSelected.includes(fw.frameworkId)}
                 onToggle={() => toggleFramework(fw.frameworkId)}
+                disabled={isReadOnly}
               />
             ))}
           </div>
@@ -237,6 +254,7 @@ export function FrameworkSelector({ onStartAssessment, onBackToDomainSelector }:
                 framework={fw}
                 selected={localSelected.includes(fw.frameworkId)}
                 onToggle={() => toggleFramework(fw.frameworkId)}
+                disabled={isReadOnly}
               />
             ))}
           </div>
@@ -259,6 +277,7 @@ export function FrameworkSelector({ onStartAssessment, onBackToDomainSelector }:
                 framework={fw}
                 selected={localSelected.includes(fw.frameworkId)}
                 onToggle={() => toggleFramework(fw.frameworkId)}
+                disabled={isReadOnly}
               />
             ))}
           </div>
@@ -336,12 +355,12 @@ export function FrameworkSelector({ onStartAssessment, onBackToDomainSelector }:
         <Button 
           size="lg" 
           onClick={handleStart}
-          disabled={localSelected.length === 0}
+          disabled={!isReadOnly && localSelected.length === 0}
         >
-          Iniciar Avaliação ({localSelected.length} framework{localSelected.length !== 1 ? 's' : ''})
+          Iniciar Avalia??o ({effectiveSelectedCount} framework{effectiveSelectedCount !== 1 ? 's' : ''})
         </Button>
         
-        {localSelected.length === 0 && (
+        {!isReadOnly && localSelected.length === 0 && (
           <p className="text-sm text-destructive">
             Selecione pelo menos um framework para continuar
           </p>
@@ -359,21 +378,24 @@ interface FrameworkCardProps {
   framework: Framework;
   selected: boolean;
   onToggle: () => void;
+  disabled?: boolean;
 }
 
-function FrameworkCard({ framework, selected, onToggle }: FrameworkCardProps) {
+function FrameworkCard({ framework, selected, onToggle, disabled }: FrameworkCardProps) {
+  const isDisabled = Boolean(disabled);
   return (
     <Card 
       className={cn(
-        "cursor-pointer transition-all hover:border-primary/50",
+        isDisabled ? "cursor-not-allowed opacity-60" : "cursor-pointer transition-all hover:border-primary/50",
         selected && "border-primary bg-primary/5"
       )}
-      onClick={onToggle}
+      onClick={isDisabled ? undefined : onToggle}
+      aria-disabled={isDisabled}
     >
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3">
-            <Checkbox checked={selected} />
+            <Checkbox checked={selected} disabled={isDisabled} />
             <div>
               <CardTitle className="text-base">{framework.shortName}</CardTitle>
               <CardDescription className="text-xs mt-0.5">

@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { canEditAssessments } from '@/lib/roles';
+import { useUserRole } from '@/hooks/useUserRole';
 import { 
   SecurityDomain, 
   getEnabledSecurityDomains, 
@@ -32,6 +34,9 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export function SecurityDomainSelector({ onDomainSelected }: SecurityDomainSelectorProps) {
   const { selectedSecurityDomain, setSelectedSecurityDomain } = useAnswersStore();
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
+  const isReadOnly = !canEdit;
   const [domains, setDomains] = useState<SecurityDomain[]>(DEFAULT_SECURITY_DOMAINS);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -52,6 +57,7 @@ export function SecurityDomainSelector({ onDomainSelected }: SecurityDomainSelec
   }, []);
 
   const handleSelectDomain = async (domainId: string) => {
+    if (isReadOnly) return;
     await setSelectedSecurityDomain(domainId);
     onDomainSelected();
   };
@@ -90,11 +96,13 @@ export function SecurityDomainSelector({ onDomainSelected }: SecurityDomainSelec
             <Card 
               key={domain.domainId}
               className={cn(
-                "cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]",
+                isReadOnly
+                  ? "cursor-not-allowed opacity-60"
+                  : "cursor-pointer transition-all hover:shadow-lg hover:scale-[1.02]",
                 isSelected && "ring-2 ring-primary shadow-lg",
                 displayInfo.borderClass
               )}
-              onClick={() => handleSelectDomain(domain.domainId)}
+              onClick={isReadOnly ? undefined : () => handleSelectDomain(domain.domainId)}
             >
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -144,6 +152,7 @@ export function SecurityDomainSelector({ onDomainSelected }: SecurityDomainSelec
                   <Button 
                     variant={isSelected ? "default" : "outline"} 
                     className="w-full group"
+                    disabled={isReadOnly}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleSelectDomain(domain.domainId);

@@ -1,9 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  buildCorsHeaders,
+  isJsonRequest,
+  isOriginAllowed,
+  isRequestTooLarge,
+  jsonHeaders,
+  streamHeaders,
+  withRequestId,
+} from "../_shared/http.ts";
+import { logError, logWarn } from "../_shared/logging.ts";
+import { fetchWithProxy } from "../_shared/proxy.ts";
+import { resolveSecretValue } from "../_shared/secrets.ts";
+import {
+  checkRateLimit,
+  getRateLimitConfig,
+  rateLimitHeaders,
+} from "../_shared/rateLimit.ts";
+import { validateExternalUrl } from "../_shared/urlValidation.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+const corsOptions = {
+  allowHeaders: "authorization, x-client-info, apikey, content-type",
+  allowMethods: "POST, OPTIONS",
 };
 
 const SYSTEM_PROMPT = `You are an expert AI Security, Cloud Security, and DevSecOps assistant for a governance assessment platform. You help security professionals analyze their organization's security posture across multiple security domains.
@@ -74,6 +92,72 @@ interface AssessmentContext {
   }[];
 }
 
+const MAX_MESSAGES = Number.parseInt(Deno.env.get("MAX_AI_MESSAGES") || "50", 10);
+const MAX_MESSAGE_CHARS = Number.parseInt(Deno.env.get("MAX_AI_MESSAGE_CHARS") || "4000", 10);
+const MAX_TOTAL_CHARS = Number.parseInt(Deno.env.get("MAX_AI_TOTAL_CHARS") || "20000", 10);
+const rateLimitConfig = getRateLimitConfig("AI_ASSISTANT");
+
+function validateEndpointUrl(raw?: string): void {
+  if (!raw) return;
+  const result = validateExternalUrl(raw);
+  if (result.ok) return;
+  switch (result.reason) {
+    case "invalid_url":
+      throw new Error("Invalid provider endpoint URL");
+    case "invalid_protocol":
+      throw new Error("Provider endpoint must use http or https");
+    case "credentials_in_url":
+      throw new Error("Provider endpoint must not include credentials");
+    case "local_host":
+    case "private_network":
+      throw new Error("Provider endpoint must not use local/private addresses");
+    default:
+      throw new Error("Invalid provider endpoint URL");
+  }
+}
+
+function isValidMessages(
+  messages: unknown
+): messages is { role: string; content: string }[] {
+  if (!Array.isArray(messages)) return false;
+  if (!Number.isFinite(MAX_MESSAGES) || MAX_MESSAGES <= 0) return false;
+  if (messages.length === 0 || messages.length > MAX_MESSAGES) return false;
+  if (!messages.every(
+    (msg) =>
+      typeof msg === "object" &&
+      msg !== null &&
+      typeof (msg as { role?: unknown }).role === "string" &&
+      typeof (msg as { content?: unknown }).content === "string"
+  )) {
+    return false;
+  }
+
+  const allowedRoles = new Set(["user", "assistant"]);
+  if (!messages.every((msg) => allowedRoles.has((msg as { role: string }).role))) {
+    return false;
+  }
+
+  if (Number.isFinite(MAX_MESSAGE_CHARS) && MAX_MESSAGE_CHARS > 0) {
+    for (const msg of messages) {
+      if ((msg as { content: string }).content.length > MAX_MESSAGE_CHARS) {
+        return false;
+      }
+    }
+  }
+
+  if (Number.isFinite(MAX_TOTAL_CHARS) && MAX_TOTAL_CHARS > 0) {
+    const totalChars = messages.reduce(
+      (sum, msg) => sum + (msg as { content: string }).content.length,
+      0
+    );
+    if (totalChars > MAX_TOTAL_CHARS) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 function buildEnrichedSystemPrompt(basePrompt: string, context?: AssessmentContext): string {
   let enrichedPrompt = basePrompt;
   
@@ -129,12 +213,12 @@ async function callLovableAI(
   maxTokens: number,
   temperature: number
 ): Promise<Response> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const LOVABLE_API_KEY = await resolveSecretValue(Deno.env.get("LOVABLE_API_KEY"));
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY is not configured");
   }
 
-  return fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  return fetchWithProxy("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -158,12 +242,12 @@ async function callOpenAI(
   systemPrompt: string,
   config: ProviderConfig
 ): Promise<Response> {
-  const apiKey = config.apiKeyEncrypted ? atob(config.apiKeyEncrypted) : null;
+  const apiKey = await resolveSecretValue(config.apiKeyEncrypted, { decodeBase64: true });
   if (!apiKey) {
     throw new Error("OpenAI API key is not configured");
   }
 
-  return fetch(config.endpointUrl || "https://api.openai.com/v1/chat/completions", {
+  return fetchWithProxy(config.endpointUrl || "https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -187,7 +271,7 @@ async function callAnthropic(
   systemPrompt: string,
   config: ProviderConfig
 ): Promise<Response> {
-  const apiKey = config.apiKeyEncrypted ? atob(config.apiKeyEncrypted) : null;
+  const apiKey = await resolveSecretValue(config.apiKeyEncrypted, { decodeBase64: true });
   if (!apiKey) {
     throw new Error("Anthropic API key is not configured");
   }
@@ -198,7 +282,7 @@ async function callAnthropic(
     content: m.content,
   }));
 
-  const response = await fetch(config.endpointUrl || "https://api.anthropic.com/v1/messages", {
+  const response = await fetchWithProxy(config.endpointUrl || "https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
@@ -273,7 +357,7 @@ async function callGoogle(
   systemPrompt: string,
   config: ProviderConfig
 ): Promise<Response> {
-  const apiKey = config.apiKeyEncrypted ? atob(config.apiKeyEncrypted) : null;
+  const apiKey = await resolveSecretValue(config.apiKeyEncrypted, { decodeBase64: true });
   if (!apiKey) {
     throw new Error("Google AI API key is not configured");
   }
@@ -287,7 +371,7 @@ async function callGoogle(
     parts: [{ text: m.content }],
   }));
 
-  const response = await fetch(endpoint, {
+  const response = await fetchWithProxy(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -363,7 +447,7 @@ async function callOllama(
 ): Promise<Response> {
   const endpoint = config.endpointUrl || "http://localhost:11434/api/chat";
 
-  const response = await fetch(endpoint, {
+  const response = await fetchWithProxy(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -432,7 +516,7 @@ async function callHuggingFace(
   systemPrompt: string,
   config: ProviderConfig
 ): Promise<Response> {
-  const apiKey = config.apiKeyEncrypted ? atob(config.apiKeyEncrypted) : null;
+  const apiKey = await resolveSecretValue(config.apiKeyEncrypted, { decodeBase64: true });
   if (!apiKey) {
     throw new Error("Hugging Face API key is not configured");
   }
@@ -440,7 +524,7 @@ async function callHuggingFace(
   const modelId = config.modelId || "meta-llama/Meta-Llama-3.1-70B-Instruct";
   const endpoint = `https://api-inference.huggingface.co/models/${modelId}/v1/chat/completions`;
 
-  return fetch(endpoint, {
+  return fetchWithProxy(endpoint, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -464,7 +548,7 @@ async function callCustomEndpoint(
   systemPrompt: string,
   config: ProviderConfig
 ): Promise<Response> {
-  const apiKey = config.apiKeyEncrypted ? atob(config.apiKeyEncrypted) : null;
+  const apiKey = await resolveSecretValue(config.apiKeyEncrypted, { decodeBase64: true });
   
   if (!config.endpointUrl) {
     throw new Error("Custom endpoint URL is not configured");
@@ -478,7 +562,7 @@ async function callCustomEndpoint(
     headers["Authorization"] = `Bearer ${apiKey}`;
   }
 
-  return fetch(config.endpointUrl, {
+  return fetchWithProxy(config.endpointUrl, {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -496,7 +580,7 @@ async function callCustomEndpoint(
 
 async function getDefaultProvider(userId: string): Promise<ProviderConfig | null> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const supabaseKey = await resolveSecretValue(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
   
   if (!supabaseUrl || !supabaseKey) {
     return null;
@@ -527,36 +611,131 @@ async function getDefaultProvider(userId: string): Promise<ProviderConfig | null
   };
 }
 
-function getUserIdFromToken(authHeader: string): string | null {
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    // Decode JWT payload (base64)
-    const payloadBase64 = token.split('.')[1];
-    const payload = JSON.parse(atob(payloadBase64));
-    return payload.sub || null;
-  } catch {
-    return null;
-  }
-}
-
 serve(async (req) => {
+  const requestId = crypto.randomUUID();
+  const path = new URL(req.url).pathname;
+  const logContext = { requestId, path };
+  const origin = req.headers.get("Origin");
+  const baseJsonHeaders = (originValue: string | null) =>
+    withRequestId(jsonHeaders(originValue, corsOptions), requestId);
+  const baseStreamHeaders = (originValue: string | null) =>
+    withRequestId(streamHeaders(originValue, corsOptions), requestId);
+  const baseCorsHeaders = (originValue: string | null) =>
+    withRequestId(buildCorsHeaders(originValue, corsOptions), requestId);
+
+  if (!isOriginAllowed(origin)) {
+    logWarn("Origin not allowed", logContext, { origin });
+    return new Response(
+      JSON.stringify({ error: "Origin not allowed" }),
+      { status: 403, headers: baseJsonHeaders(origin) }
+    );
+  }
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: baseCorsHeaders(origin) });
+  }
+
+  if (req.method !== "POST") {
+    return new Response(
+      JSON.stringify({ error: "Method not allowed" }),
+      { status: 405, headers: baseJsonHeaders(origin) }
+    );
+  }
+
+  if (isRequestTooLarge(req)) {
+    return new Response(
+      JSON.stringify({ error: "Request body too large" }),
+      { status: 413, headers: baseJsonHeaders(origin) }
+    );
+  }
+
+  if (!isJsonRequest(req)) {
+    return new Response(
+      JSON.stringify({ error: "Content-Type must be application/json" }),
+      { status: 415, headers: baseJsonHeaders(origin) }
+    );
   }
 
   try {
-    const { messages, context, provider: clientProvider } = await req.json();
+    const authHeader = req.headers.get("authorization") || "";
+    if (!authHeader.startsWith("Bearer ")) {
+      logWarn("Missing authorization token", logContext);
+      return new Response(
+        JSON.stringify({ error: "Missing authorization token" }),
+        { status: 401, headers: baseJsonHeaders(origin) }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = await resolveSecretValue(Deno.env.get("SUPABASE_SERVICE_ROLE_KEY"));
+    if (!supabaseUrl || !supabaseKey) {
+      logError("Supabase configuration missing", logContext);
+      return new Response(
+        JSON.stringify({ error: "Supabase configuration missing" }),
+        { status: 500, headers: baseJsonHeaders(origin) }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      logWarn("Invalid or expired token", logContext);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: baseJsonHeaders(origin) }
+      );
+    }
+
+    if (rateLimitConfig.limit > 0) {
+      const rate = checkRateLimit(`ai-assistant:${user.id}`, rateLimitConfig.limit, rateLimitConfig.windowMs);
+      if (!rate.allowed) {
+        logWarn("Rate limit exceeded", { ...logContext, userId: user.id });
+        const retryAfter = Math.ceil(rate.resetMs / 1000);
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+          {
+            status: 429,
+            headers: {
+              ...baseJsonHeaders(origin),
+              ...rateLimitHeaders(rateLimitConfig.limit, rate.remaining, rate.resetMs),
+              "Retry-After": String(retryAfter),
+            },
+          }
+        );
+      }
+    }
+
+    let payload: {
+      messages: unknown;
+      context?: AssessmentContext;
+      provider?: ProviderConfig;
+    };
+
+    try {
+      payload = await req.json();
+    } catch {
+      logWarn("Invalid JSON body", logContext);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON body" }),
+        { status: 400, headers: baseJsonHeaders(origin) }
+      );
+    }
+
+    const { messages, context, provider: clientProvider } = payload;
+    if (!isValidMessages(messages)) {
+      logWarn("Invalid messages payload", logContext);
+      return new Response(
+        JSON.stringify({ error: "Invalid messages payload" }),
+        { status: 400, headers: baseJsonHeaders(origin) }
+      );
+    }
     
-    // Try to get user ID from auth header
-    const authHeader = req.headers.get('authorization') || '';
-    const userId = getUserIdFromToken(authHeader);
-    
-    // Determine which provider to use
     let providerConfig: ProviderConfig | null = clientProvider || null;
-    
-    // If no provider specified, try to get user's default
-    if (!providerConfig && userId) {
-      providerConfig = await getDefaultProvider(userId);
+
+    if (!providerConfig) {
+      providerConfig = await getDefaultProvider(user.id);
     }
     
     // Fallback to Lovable AI
@@ -577,6 +756,11 @@ serve(async (req) => {
     const temperature = providerConfig.temperature ?? 0.7;
 
     let response: Response;
+    if (providerConfig.endpointUrl) {
+      validateEndpointUrl(providerConfig.endpointUrl);
+    } else if (providerConfig.providerType === 'ollama') {
+      validateEndpointUrl("http://localhost:11434/api/chat");
+    }
 
     switch (providerConfig.providerType) {
       case 'openai':
@@ -613,37 +797,42 @@ serve(async (req) => {
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 429, headers: baseJsonHeaders(origin) }
         );
       }
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "AI credits exhausted. Please add credits to continue." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 402, headers: baseJsonHeaders(origin) }
         );
       }
       if (response.status === 401) {
         return new Response(
           JSON.stringify({ error: "Invalid API key for the selected AI provider." }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 401, headers: baseJsonHeaders(origin) }
         );
       }
       const errorText = await response.text();
-      console.error("AI provider error:", response.status, errorText);
+      logError("AI provider error", { ...logContext, userId: user.id }, {
+        status: response.status,
+        error: errorText,
+      });
       return new Response(
         JSON.stringify({ error: "AI service temporarily unavailable" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 500, headers: baseJsonHeaders(origin) }
       );
     }
 
     return new Response(response.body, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      headers: baseStreamHeaders(origin),
     });
   } catch (error) {
-    console.error("AI assistant error:", error);
+    logError("AI assistant error", logContext, {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { status: 500, headers: baseJsonHeaders(origin) }
     );
   }
 });

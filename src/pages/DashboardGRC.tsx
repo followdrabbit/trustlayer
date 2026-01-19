@@ -1,11 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Users, Download } from 'lucide-react';
 import { DomainSwitcher } from '@/components/DomainSwitcher';
 import { PageBreadcrumb } from '@/components/PageBreadcrumb';
 import { useDashboardMetrics } from '@/hooks/useDashboardMetrics';
+import { useDashboardLayout } from '@/hooks/useDashboardLayout';
+import { useUserRole } from '@/hooks/useUserRole';
 import { cn } from '@/lib/utils';
+import { canEditAssessments } from '@/lib/roles';
 import MaturityTrendChart from '@/components/MaturityTrendChart';
 import { DomainSpecificIndicators } from '@/components/DomainSpecificIndicators';
 import { 
@@ -54,6 +57,7 @@ import {
   DashboardSection,
   DashboardRoadmapGrid,
   PeriodComparisonCard,
+  DashboardLayoutRenderer,
 } from '@/components/dashboard';
 
 // Framework category labels and colors imported from shared lib
@@ -65,6 +69,9 @@ type SortOrder = 'asc' | 'desc';
 export default function DashboardGRC() {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const { layout } = useDashboardLayout('grc');
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
 
   // Use centralized dashboard metrics hook
   const {
@@ -222,6 +229,11 @@ export default function DashboardGRC() {
       }
       return next;
     });
+  };
+
+  const handleToggleFramework = (frameworkId: string) => {
+    if (!canEdit) return;
+    toggleFramework(frameworkId);
   };
 
   const clearFilters = () => {
@@ -509,25 +521,134 @@ export default function DashboardGRC() {
     });
   };
 
+
   if (isLoading || questionsLoading) {
     return <div className="flex items-center justify-center h-64">{t('dashboard.loading')}</div>;
   }
-  return (
-    <div 
-      className={cn(
-        "space-y-6 transition-all duration-300 ease-out",
-        isTransitioning && "opacity-50 scale-[0.99] blur-[1px]"
-      )}
-    >
-      {/* Breadcrumb */}
-      <PageBreadcrumb 
-        items={[
-          { label: t('dashboard.dashboards'), href: '/dashboard' },
-          { label: t('navigation.grc'), icon: Users }
-        ]} 
-      />
+  const frameworkCoverageContent = (
+    <>
+      <div className="filter-bar">
+        <div className="flex-1 min-w-[200px]">
+          <Input
+            placeholder={t('dashboard.searchFrameworks')}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full"
+          />
+        </div>
+      </div>
 
-      {/* Header with Domain Switcher and Framework Selector */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <div className="card-elevated p-6">
+          <h3 className="font-semibold mb-4">{t('dashboard.maturityByCategory')}</h3>
+          <p className="text-xs text-muted-foreground mb-3">{t('dashboard.clickForDetails')}</p>
+          <div className="space-y-4">
+            {frameworkCategoryData.map((fc, idx) => {
+              const status = fc.coverage < 50 ? 'incomplete' : 
+                             fc.score < 50 ? 'at-risk' : 'on-track';
+              return (
+                <div 
+                  key={fc.categoryId} 
+                  className="p-3 border border-border rounded-lg animate-in fade-in-0 slide-in-from-right-4 duration-400 cursor-pointer hover:border-primary/50 hover:bg-accent/30 transition-all"
+                  style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'backwards' }}
+                  onClick={() => setSelectedFrameworkCategory(fc.categoryId)}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-medium text-sm">{fc.name}</span>
+                    <span className={cn(
+                      "text-xs px-2 py-0.5 rounded",
+                      status === 'incomplete' ? 'bg-gray-100 text-gray-700' :
+                      status === 'at-risk' ? 'bg-red-100 text-red-700' :
+                      'bg-green-100 text-green-700'
+                    )}>
+                      {status === 'incomplete' ? 'Incompleto' :
+                       status === 'at-risk' ? 'Em Risco' : 'Adequado'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1">
+                      <div className="text-xs text-muted-foreground mb-1">Cobertura</div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500" 
+                            style={{ width: `${fc.coverage}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-xs w-10">{fc.coverage}%</span>
+                      </div>
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-xs text-muted-foreground mb-1">{t('dashboard.maturity')}</div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full" 
+                            style={{ 
+                              width: `${fc.score}%`,
+                              backgroundColor: fc.maturityLevel.color 
+                            }}
+                          />
+                        </div>
+                        <span className="font-mono text-xs w-10">{fc.score}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-2">
+                    {fc.answeredQuestions}/{fc.totalQuestions} {t('dashboard.questions')} {t('dashboard.answered').toLowerCase()}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="card-elevated p-6">
+          <h3 className="font-semibold mb-4">{t('dashboard.frameworkCoverage')} ({filteredFrameworkCoverage.length})</h3>
+          <p className="text-xs text-muted-foreground mb-3">{t('dashboard.clickForDetails')}</p>
+          <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+            {filteredFrameworkCoverage.map((fw, idx) => (
+              <div 
+                key={fw.framework} 
+                className="flex items-center justify-between p-2 hover:bg-muted/50 rounded transition-colors animate-in fade-in-0 duration-300 cursor-pointer"
+                style={{ animationDelay: `${idx * 30}ms`, animationFillMode: 'backwards' }}
+                onClick={() => setSelectedFramework(fw.framework)}
+              >
+                <span className="text-sm truncate flex-1 mr-2" title={fw.framework}>
+                  {fw.framework}
+                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-muted-foreground">
+                    {fw.answeredQuestions}/{fw.totalQuestions}
+                  </span>
+                  <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary" 
+                      style={{ width: `${fw.averageScore * 100}%` }}
+                    />
+                  </div>
+                  <span className="font-mono text-sm w-10 text-right">
+                    {Math.round(fw.averageScore * 100)}%
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </>
+  );
+
+  const frameworkCoverageSection = (
+    <div className="space-y-4">
+      {frameworkCoverageContent}
+    </div>
+  );
+
+  const showFrameworksTab = !layout.widgets.includes('grc.frameworkCoverage');
+
+  const widgets: Record<string, ReactNode> = {
+    'grc.header': (
       <DashboardHeader
         title={t('dashboard.grcTitle')}
         subtitle={t('dashboard.grcSubtitle')}
@@ -538,13 +659,13 @@ export default function DashboardGRC() {
         <DashboardFrameworkSelector
           frameworks={enabledFrameworks}
           selectedIds={selectedFrameworkIds}
-          onToggle={toggleFramework}
+          onToggle={handleToggleFramework}
           helpTooltip={<FrameworkCategoryHelp />}
+          disabled={!canEdit}
         />
       </DashboardHeader>
-
-
-      {/* Quick Status Pills - Enhanced with animations */}
+    ),
+    'grc.statusPills': (
       <div className="flex flex-wrap gap-2 animate-in fade-in-0 slide-in-from-left-4 duration-500" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
         <Badge 
           variant={statusFilter === 'all' ? 'default' : 'outline'}
@@ -584,8 +705,8 @@ export default function DashboardGRC() {
           {t('dashboard.onTrack')} ({quickStats.onTrackCount})
         </Badge>
       </div>
-
-      {/* GRC KPI Cards - Standardized */}
+    ),
+    'grc.kpis': (
       <DashboardKPIGrid columns={4}>
         <DashboardKPICard
           label={t('dashboard.overallCoverage')}
@@ -624,15 +745,16 @@ export default function DashboardGRC() {
           variant="danger"
         />
       </DashboardKPIGrid>
-
-      {/* Domain-Specific Indicators */}
+    ),
+    'grc.frameworkCoverage': frameworkCoverageSection,
+    'grc.indicators': (
       <DomainSpecificIndicators 
         securityDomainId={currentDomainInfo?.domainId || 'AI_SECURITY'}
         questions={questionsForDashboard}
         answers={answers}
       />
-
-      {/* Strategic Roadmap - Standardized */}
+    ),
+    'grc.roadmap': (
       <DashboardRoadmapGrid
         items={roadmap}
         title={t('dashboard.strategicRoadmap')}
@@ -641,23 +763,21 @@ export default function DashboardGRC() {
         animationDelay={300}
         maxItemsPerColumn={5}
       />
-
-      {/* Tabs for different views */}
+    ),
+    'grc.tabs': (
       <Tabs defaultValue="domains" className="space-y-4">
         <TabsList>
           <TabsTrigger value="domains" className="gap-1">{t('dashboard.byDomain')}</TabsTrigger>
-          <TabsTrigger value="frameworks">{t('dashboard.byFramework')}</TabsTrigger>
+          {showFrameworksTab && <TabsTrigger value="frameworks">{t('dashboard.byFramework')}</TabsTrigger>}
           <TabsTrigger value="gaps">{t('dashboard.criticalGaps')}</TabsTrigger>
           <TabsTrigger value="ownership">{t('dashboard.byOwner')}</TabsTrigger>
         </TabsList>
 
-        {/* Domains Tab */}
         <TabsContent value="domains" className="space-y-4">
           <DashboardSection
             title={t('dashboard.domainMetrics')}
             helpTooltip={<DomainMetricsHelpAware securityDomainId={currentDomainInfo?.domainId || 'AI_SECURITY'} />}
           />
-          {/* Filter Bar */}
           <div className="filter-bar">
             <div className="flex-1 min-w-[200px]">
               <Input
@@ -694,7 +814,7 @@ export default function DashboardGRC() {
               size="sm"
               onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')}
             >
-              {sortOrder === 'asc' ? '↑' : '↓'}
+              {sortOrder === 'asc' ? '?' : '?'}
             </Button>
             {hasActiveFilters && (
               <Button variant="ghost" size="sm" onClick={clearFilters}>
@@ -703,18 +823,15 @@ export default function DashboardGRC() {
             )}
           </div>
 
-          {/* Results count */}
           <div className="text-sm text-muted-foreground">
             {t('dashboard.showing')} {filteredDomainMetrics.length} {t('dashboard.of')} {metrics.domainMetrics.length} {t('dashboard.byDomain').toLowerCase()}
           </div>
 
-          {/* Domain Cards with Expandable Subcategories */}
           <div className="space-y-3">
             {filteredDomainMetrics.map((dm, idx) => {
               const status = getStatus(dm.coverage, dm.score);
               const isExpanded = expandedDomains.has(dm.domainId);
               
-              // Filter subcategories based on ownership if filter is active
               const filteredSubcats = ownershipFilter !== 'all'
                 ? dm.subcategoryMetrics.filter(sm => sm.ownershipType === ownershipFilter)
                 : dm.subcategoryMetrics;
@@ -747,7 +864,6 @@ export default function DashboardGRC() {
                       </div>
                         
                       <div className="flex items-center gap-6">
-                        {/* Coverage */}
                         <div className="text-center min-w-[80px]">
                           <div className="text-xs text-muted-foreground mb-1">{t('dashboard.coverage')}</div>
                           <div className="flex items-center gap-2">
@@ -761,7 +877,6 @@ export default function DashboardGRC() {
                           </div>
                         </div>
 
-                        {/* Maturity */}
                         <div className="text-center min-w-[80px]">
                           <div className="text-xs text-muted-foreground mb-1">{t('dashboard.maturity')}</div>
                           <div className="flex items-center gap-2">
@@ -778,7 +893,6 @@ export default function DashboardGRC() {
                           </div>
                         </div>
 
-                        {/* Gaps */}
                         <div className="text-center min-w-[60px]">
                           <div className="text-xs text-muted-foreground mb-1">{t('dashboard.gaps')}</div>
                           <span className={cn(
@@ -789,7 +903,6 @@ export default function DashboardGRC() {
                           </span>
                         </div>
 
-                        {/* Status */}
                         <span className={cn(
                           "text-xs px-2 py-1 rounded min-w-[80px] text-center",
                           status === 'incomplete' ? 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' :
@@ -800,11 +913,10 @@ export default function DashboardGRC() {
                            status === 'at-risk' ? t('dashboard.atRisk') : t('dashboard.adequate')}
                         </span>
 
-                        {/* Expand indicator */}
                         <CollapsibleTrigger asChild onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                           <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <span className="text-muted-foreground text-lg">
-                              {isExpanded ? '−' : '+'}
+                              {isExpanded ? '?' : '+'}
                             </span>
                           </Button>
                         </CollapsibleTrigger>
@@ -826,7 +938,7 @@ export default function DashboardGRC() {
                                     {sm.ownershipType || 'GRC'}
                                   </span>
                                   <span className="text-xs text-muted-foreground">
-                                    · {sm.answeredQuestions}/{sm.totalQuestions} {t('dashboard.questions')}
+                                    ? {sm.answeredQuestions}/{sm.totalQuestions} {t('dashboard.questions')}
                                   </span>
                                 </div>
                               </div>
@@ -853,122 +965,12 @@ export default function DashboardGRC() {
           </div>
         </TabsContent>
 
-        {/* Frameworks Tab */}
-        <TabsContent value="frameworks" className="space-y-4">
-          <div className="filter-bar">
-            <div className="flex-1 min-w-[200px]">
-              <Input
-                placeholder={t('dashboard.searchFrameworks')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full"
-              />
-            </div>
-          </div>
+        {showFrameworksTab && (
+          <TabsContent value="frameworks" className="space-y-4">
+            {frameworkCoverageContent}
+          </TabsContent>
+        )}
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Framework Categories */}
-            <div className="card-elevated p-6">
-              <h3 className="font-semibold mb-4">{t('dashboard.maturityByCategory')}</h3>
-              <p className="text-xs text-muted-foreground mb-3">{t('dashboard.clickForDetails')}</p>
-              <div className="space-y-4">
-                {frameworkCategoryData.map((fc, idx) => {
-                  const status = fc.coverage < 50 ? 'incomplete' : 
-                                 fc.score < 50 ? 'at-risk' : 'on-track';
-                  return (
-                    <div 
-                      key={fc.categoryId} 
-                      className="p-3 border border-border rounded-lg animate-in fade-in-0 slide-in-from-right-4 duration-400 cursor-pointer hover:border-primary/50 hover:bg-accent/30 transition-all"
-                      style={{ animationDelay: `${idx * 100}ms`, animationFillMode: 'backwards' }}
-                      onClick={() => setSelectedFrameworkCategory(fc.categoryId)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-sm">{fc.name}</span>
-                        <span className={cn(
-                          "text-xs px-2 py-0.5 rounded",
-                          status === 'incomplete' ? 'bg-gray-100 text-gray-700' :
-                          status === 'at-risk' ? 'bg-red-100 text-red-700' :
-                          'bg-green-100 text-green-700'
-                        )}>
-                          {status === 'incomplete' ? 'Incompleto' :
-                           status === 'at-risk' ? 'Em Risco' : 'Adequado'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="flex-1">
-                          <div className="text-xs text-muted-foreground mb-1">Cobertura</div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-blue-500" 
-                                style={{ width: `${fc.coverage}%` }}
-                              />
-                            </div>
-                            <span className="font-mono text-xs w-10">{fc.coverage}%</span>
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <div className="text-xs text-muted-foreground mb-1">{t('dashboard.maturity')}</div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                              <div 
-                                className="h-full" 
-                                style={{ 
-                                  width: `${fc.score}%`,
-                                  backgroundColor: fc.maturityLevel.color 
-                                }}
-                              />
-                            </div>
-                            <span className="font-mono text-xs w-10">{fc.score}%</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-2">
-                        {fc.answeredQuestions}/{fc.totalQuestions} {t('dashboard.questions')} {t('dashboard.answered').toLowerCase()}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Individual Frameworks */}
-            <div className="card-elevated p-6">
-              <h3 className="font-semibold mb-4">{t('dashboard.frameworkCoverage')} ({filteredFrameworkCoverage.length})</h3>
-              <p className="text-xs text-muted-foreground mb-3">{t('dashboard.clickForDetails')}</p>
-              <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                {filteredFrameworkCoverage.map((fw, idx) => (
-                  <div 
-                    key={fw.framework} 
-                    className="flex items-center justify-between p-2 hover:bg-muted/50 rounded transition-colors animate-in fade-in-0 duration-300 cursor-pointer"
-                    style={{ animationDelay: `${idx * 30}ms`, animationFillMode: 'backwards' }}
-                    onClick={() => setSelectedFramework(fw.framework)}
-                  >
-                    <span className="text-sm truncate flex-1 mr-2" title={fw.framework}>
-                      {fw.framework}
-                    </span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted-foreground">
-                        {fw.answeredQuestions}/{fw.totalQuestions}
-                      </span>
-                      <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-primary" 
-                          style={{ width: `${fw.averageScore * 100}%` }}
-                        />
-                      </div>
-                      <span className="font-mono text-sm w-10 text-right">
-                        {Math.round(fw.averageScore * 100)}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Critical Gaps Tab */}
         <TabsContent value="gaps" className="space-y-4">
           <div className="card-elevated p-6">
             <div className="flex items-center justify-between mb-4">
@@ -1003,7 +1005,7 @@ export default function DashboardGRC() {
                         <p className="text-sm font-medium">{gap.questionText}</p>
                         <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                           <span>{gap.subcatName}</span>
-                          <span>·</span>
+                          <span>?</span>
                           <span>{gap.ownershipType}</span>
                         </div>
                       </div>
@@ -1022,7 +1024,6 @@ export default function DashboardGRC() {
           </div>
         </TabsContent>
 
-        {/* Ownership Tab */}
         <TabsContent value="ownership" className="space-y-4">
           <div className="grid md:grid-cols-2 gap-6">
             <div className="card-elevated p-6">
@@ -1076,7 +1077,7 @@ export default function DashboardGRC() {
                       <div className="flex-1">
                         <p className="font-medium text-sm">{sm.subcatName}</p>
                         <p className="text-xs text-muted-foreground">
-                          {sm.ownershipType || 'GRC'} · {sm.answeredQuestions}/{sm.totalQuestions} {t('dashboard.questions')}
+                          {sm.ownershipType || 'GRC'} ? {sm.answeredQuestions}/{sm.totalQuestions} {t('dashboard.questions')}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
@@ -1097,6 +1098,33 @@ export default function DashboardGRC() {
           </div>
         </TabsContent>
       </Tabs>
+    ),
+    'shared.periodComparison': (
+      <PeriodComparisonCard 
+        securityDomainId={currentDomainInfo?.domainId}
+        className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500" 
+      />
+    ),
+    'shared.maturityTrend': (
+      <MaturityTrendChart className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-100" />
+    ),
+  };
+
+  return (
+    <div 
+      className={cn(
+        "space-y-6 transition-all duration-300 ease-out",
+        isTransitioning && "opacity-50 scale-[0.99] blur-[1px]"
+      )}
+    >
+      <PageBreadcrumb 
+        items={[
+          { label: t('dashboard.dashboards'), href: '/dashboard' },
+          { label: t('navigation.grc'), icon: Users }
+        ]} 
+      />
+
+      <DashboardLayoutRenderer layout={layout} widgets={widgets} />
 
       {/* Ownership Details Dialog */}
       <Dialog open={!!selectedOwnership} onOpenChange={(open) => !open && setSelectedOwnership(null)}>
@@ -1654,16 +1682,6 @@ export default function DashboardGRC() {
             </>
           )}
         </DialogContent>
-      </Dialog>
-
-      {/* Period Comparison */}
-      <PeriodComparisonCard 
-        securityDomainId={currentDomainInfo?.domainId}
-        className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500" 
-      />
-
-      {/* Maturity Trend Chart */}
-      <MaturityTrendChart className="animate-in fade-in-0 slide-in-from-bottom-4 duration-500 delay-100" />
-    </div>
+      </Dialog>    </div>
   );
 }

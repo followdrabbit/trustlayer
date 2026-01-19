@@ -9,6 +9,7 @@ interface DashboardFrameworkSelectorProps {
   onToggle: (frameworkId: string) => void;
   helpTooltip?: ReactNode;
   className?: string;
+  disabled?: boolean;
 }
 
 export function DashboardFrameworkSelector({
@@ -17,8 +18,10 @@ export function DashboardFrameworkSelector({
   onToggle,
   helpTooltip,
   className,
+  disabled = false,
 }: DashboardFrameworkSelectorProps) {
   const selectionCount = selectedIds.length;
+  const isReadOnly = Boolean(disabled);
   
   return (
     <div className={cn("border-t pt-3 sm:pt-4", className)}>
@@ -38,12 +41,20 @@ export function DashboardFrameworkSelector({
               key={fw.frameworkId}
               variant={isSelected ? "default" : "outline"}
               className={cn(
-                "cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md text-[10px] sm:text-xs py-0.5 px-1.5 sm:px-2",
-                isSelected 
-                  ? "bg-primary hover:bg-primary/90" 
-                  : "opacity-50 hover:opacity-100 hover:border-primary/50"
+                "transition-all duration-200 text-[10px] sm:text-xs py-0.5 px-1.5 sm:px-2",
+                isReadOnly
+                  ? "cursor-not-allowed opacity-60"
+                  : "cursor-pointer hover:scale-105 hover:shadow-md",
+                isSelected
+                  ? isReadOnly
+                    ? "bg-primary"
+                    : "bg-primary hover:bg-primary/90"
+                  : isReadOnly
+                    ? "opacity-60"
+                    : "opacity-50 hover:opacity-100 hover:border-primary/50"
               )}
-              onClick={() => onToggle(fw.frameworkId)}
+              onClick={isReadOnly ? undefined : () => onToggle(fw.frameworkId)}
+              aria-disabled={isReadOnly}
             >
               {fw.shortName}
             </Badge>
@@ -52,8 +63,14 @@ export function DashboardFrameworkSelector({
       </div>
 
       <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5 sm:mt-2">
-        Clique nos frameworks acima para filtrar os dados exibidos.
-        {selectionCount > 0 && ` (${selectionCount} selecionados)`}
+        {isReadOnly ? (
+          "Somente leitura. Os filtros nao podem ser alterados."
+        ) : (
+          <>
+            Clique nos frameworks acima para filtrar os dados exibidos.
+            {selectionCount > 0 && ` (${selectionCount} selecionados)`}
+          </>
+        )}
       </p>
     </div>
   );

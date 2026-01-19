@@ -114,7 +114,7 @@ i18n: react-i18next
 1. Clone o repositório
 2. Configure o Supabase (ou use Lovable Cloud)
 3. Rode `npm install && npm run dev`
-4. Acesse com o usuário demo: `demo@aiassess.app` / `Demo@2025!`
+4. Acesse com credenciais provisionadas pelo administrador.
 
 ---
 
@@ -130,7 +130,7 @@ O projeto está aberto para:
 
 ### 🔗 Links
 
-🌐 **Demo ao vivo:** https://ai-assess-insight.lovable.app  
+🌐 **Contato comercial: (definir)
 📦 **Repositório:** [Em breve no GitHub]  
 📚 **Documentação:** `/docs/ARCHITECTURE.md` e `/docs/API.md`
 
@@ -159,7 +159,7 @@ Plataforma de Governança de Segurança Multi-Domínio para CISOs e GRC Managers
 
 **Novidade:** Sistema de perfil de voz com visualização de ondas sonoras em tempo real! 🎤
 
-🌐 Demo: https://ai-assess-insight.lovable.app
+🌐 Contato comercial: (definir)
 
 Contribuições são bem-vindas! 🚀
 
@@ -210,7 +210,7 @@ Contribuições são bem-vindas! 🚀
 > React 18 • TypeScript • Tailwind • Supabase • Recharts
 
 **Slide 8 - CTA**
-> 🚀 Acesse a demo gratuita!
+> 🚀 Solicite uma demonstracao
 > 
 > https://ai-assess-insight.lovable.app
 > 
@@ -231,3 +231,4 @@ Contribuições são bem-vindas! 🚀
 ---
 
 *Criado com ❤️ usando Lovable.dev*
+

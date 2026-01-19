@@ -1,6 +1,6 @@
 # ADR 0013: Backup and Disaster Recovery
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-01-17
 
 ## Context
@@ -18,4 +18,3 @@ critical configuration data.
 
 ## Alternatives Considered
 - Best-effort backups only (insufficient for enterprise SLAs).
-

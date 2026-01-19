@@ -1,8 +1,22 @@
 import ExcelJS from 'exceljs';
 import { Answer } from './database';
-import { questions } from './dataset';
+import { questions, loadCatalogFromDatabase } from './dataset';
+import { scanXlsxFile } from './xlsxSecurity';
 
 const SUPPORTED_SCHEMA_VERSIONS = ['1.0.0'];
+const XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const MAX_IMPORT_FILE_BYTES = Number.parseInt(
+  import.meta.env.VITE_IMPORT_MAX_FILE_BYTES || '',
+  10
+) || 5 * 1024 * 1024;
+const MAX_IMPORT_CELL_CHARS = Number.parseInt(
+  import.meta.env.VITE_IMPORT_MAX_CELL_CHARS || '',
+  10
+) || 2000;
+const MAX_IMPORT_ROWS = Number.parseInt(
+  import.meta.env.VITE_IMPORT_MAX_ROWS || '',
+  10
+) || 5000;
 
 export interface ImportResult {
   success: boolean;
@@ -25,9 +39,16 @@ export interface ImportValidation {
 
 // Helper to read workbook from file
 async function readWorkbookFromFile(file: File): Promise<ExcelJS.Workbook> {
-  const arrayBuffer = await file.arrayBuffer();
+  const rawData = typeof file.arrayBuffer === 'function'
+    ? await file.arrayBuffer()
+    : await new Response(file).arrayBuffer();
+  const data = rawData instanceof ArrayBuffer
+    ? rawData
+    : rawData instanceof Uint8Array
+      ? rawData
+      : new Uint8Array(rawData as ArrayBuffer);
   const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(arrayBuffer);
+  await workbook.xlsx.load(data);
   return workbook;
 }
 
@@ -68,14 +89,51 @@ function getHeaders(worksheet: ExcelJS.Worksheet): string[] {
   return headers;
 }
 
+function hasFormulaCells(worksheet: ExcelJS.Worksheet): boolean {
+  let hasFormula = false;
+  worksheet.eachRow((row) => {
+    row.eachCell((cell) => {
+      const cellValue = cell.value as { formula?: string } | null;
+      if (cellValue && typeof cellValue === 'object' && 'formula' in cellValue) {
+        hasFormula = true;
+      }
+    });
+  });
+  return hasFormula;
+}
+
 // Validate file before import
 export async function validateImportFile(file: File): Promise<ImportValidation> {
   try {
-    const workbook = await readWorkbookFromFile(file);
-    
     const errors: string[] = [];
     const warnings: string[] = [];
     const columnMapping: Record<string, string> = {};
+
+    if (file.size > MAX_IMPORT_FILE_BYTES) {
+      return {
+        isValid: false,
+        errors: [`Arquivo muito grande. Limite ${Math.round(MAX_IMPORT_FILE_BYTES / (1024 * 1024))}MB`],
+        warnings: [],
+        columnMapping: {},
+      };
+    }
+
+    if (file.type && file.type !== XLSX_MIME_TYPE) {
+      warnings.push('Tipo MIME inesperado para arquivo XLSX');
+    }
+
+    const scan = await scanXlsxFile(file);
+    warnings.push(...scan.warnings);
+    if (scan.errors.length > 0) {
+      return {
+        isValid: false,
+        errors: scan.errors,
+        warnings,
+        columnMapping: {},
+      };
+    }
+
+    const workbook = await readWorkbookFromFile(file);
 
     // Check for required sheets
     const sheetNames = workbook.worksheets.map(ws => ws.name);
@@ -105,6 +163,25 @@ export async function validateImportFile(file: File): Promise<ImportValidation> 
     if (sheetNames.includes('Answers')) {
       const answersSheet = workbook.getWorksheet('Answers');
       if (answersSheet) {
+        const totalRows = answersSheet.actualRowCount || answersSheet.rowCount;
+        const dataRows = Math.max(0, totalRows - 1);
+        if (dataRows > MAX_IMPORT_ROWS) {
+          errors.push(`Planilha "Answers" excede o limite de linhas (${dataRows}/${MAX_IMPORT_ROWS})`);
+        }
+
+        if (hasFormulaCells(answersSheet)) {
+          errors.push('Formulas nao sao permitidas no arquivo XLSX');
+        }
+
+        answersSheet.eachRow((row, rowNumber) => {
+          row.eachCell((cell) => {
+            const textValue = cell.text || '';
+            if (textValue.length > MAX_IMPORT_CELL_CHARS) {
+              errors.push(`Linha ${rowNumber}: conteudo muito longo`);
+            }
+          });
+        });
+
         const headers = getHeaders(answersSheet);
         const requiredColumns = ['questionId', 'response'];
         const optionalColumns = ['evidenceOk', 'notes', 'evidenceLinks', 'updatedAt'];
@@ -150,10 +227,21 @@ export async function validateImportFile(file: File): Promise<ImportValidation> 
 // Import answers from XLSX file
 export async function importAnswersFromXLSX(file: File): Promise<ImportResult> {
   try {
+    const validation = await validateImportFile(file);
+    if (!validation.isValid) {
+      return {
+        success: false,
+        answers: [],
+        warnings: validation.warnings,
+        errors: validation.errors,
+      };
+    }
+
+    await loadCatalogFromDatabase();
     const workbook = await readWorkbookFromFile(file);
     
     const answers: Answer[] = [];
-    const warnings: string[] = [];
+    const warnings: string[] = [...validation.warnings];
     const errors: string[] = [];
 
     // Get valid question IDs

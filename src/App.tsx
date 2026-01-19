@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { useAnswersStore } from "@/lib/stores";
 import { AuthGuard } from "@/components/auth/AuthGuard";
+import { AdminGuard } from "@/components/auth/AdminGuard";
 import { VoiceSettingsProvider } from "@/contexts/VoiceSettingsContext";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
@@ -15,30 +16,44 @@ import DashboardExecutive from "./pages/DashboardExecutive";
 import DashboardGRC from "./pages/DashboardGRC";
 import DashboardSpecialist from "./pages/DashboardSpecialist";
 import Settings from "./pages/Settings";
+import AdminConsole from "./pages/AdminConsole";
 import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
-import Demo from "./pages/Demo";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
 function AppContent() {
   const loadAnswers = useAnswersStore(state => state.loadAnswers);
+  const [isCatalogReady, setIsCatalogReady] = useState(false);
 
   useEffect(() => {
-    loadAnswers();
+    let active = true;
+    loadAnswers()
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setIsCatalogReady(true);
+      });
+    return () => {
+      active = false;
+    };
   }, [loadAnswers]);
+
+  if (!isCatalogReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        Carregando catalogo...
+      </div>
+    );
+  }
 
   return (
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
-        <Route path="/demo" element={<Demo />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         
@@ -56,6 +71,14 @@ function AppContent() {
           <Route path="dashboard/grc" element={<DashboardGRC />} />
           <Route path="dashboard/specialist" element={<DashboardSpecialist />} />
           <Route path="settings" element={<Settings />} />
+          <Route
+            path="admin"
+            element={
+              <AdminGuard>
+                <AdminConsole />
+              </AdminGuard>
+            }
+          />
           <Route path="profile" element={<Profile />} />
         </Route>
         

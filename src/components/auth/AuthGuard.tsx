@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useSessionPolicy } from '@/hooks/useSessionPolicy';
 import { Loader2 } from 'lucide-react';
 
 interface AuthGuardProps {
@@ -7,7 +8,8 @@ interface AuthGuardProps {
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, session } = useAuth();
+  useSessionPolicy(session);
   const location = useLocation();
 
   if (loading) {

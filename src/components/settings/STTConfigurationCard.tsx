@@ -10,6 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { STT_PROVIDERS, STTProviderType, getSTTProvider } from '@/lib/sttProviders';
 import { cn } from '@/lib/utils';
+import { isInlineSecretAllowed } from '@/lib/secretInput';
+import { validateExternalUrl } from '@/lib/urlValidation';
+import { toast } from 'sonner';
 
 interface STTSettings {
   stt_provider: STTProviderType;
@@ -33,8 +36,14 @@ export function STTConfigurationCard({ settings, onSave, isSaving, disabled }: S
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'error'>('idle');
   
   const currentProvider = getSTTProvider(settings.stt_provider);
+  const inlineSecretsAllowed = isInlineSecretAllowed();
 
   const handleProviderChange = async (value: STTProviderType) => {
+    const nextProvider = getSTTProvider(value);
+    if (nextProvider?.requiresApiKey && !inlineSecretsAllowed) {
+      toast.error(t('profile.inlineSecretsDisabled', 'Inline API keys are disabled by policy.'));
+      return;
+    }
     await onSave('stt_provider', value);
     // Reset API key display when changing provider
     setApiKeyInput('');
@@ -42,15 +51,30 @@ export function STTConfigurationCard({ settings, onSave, isSaving, disabled }: S
   };
 
   const handleSaveApiKey = async () => {
+    if (!inlineSecretsAllowed) {
+      toast.error(t('profile.inlineSecretsDisabled', 'Inline API keys are disabled by policy.'));
+      return;
+    }
     await onSave('stt_api_key', apiKeyInput || null);
   };
 
   const handleSaveEndpoint = async () => {
+    if (endpointInput) {
+      const check = validateExternalUrl(endpointInput);
+      if (!check.ok) {
+        toast.error('Endpoint invalido');
+        return;
+      }
+    }
     await onSave('stt_endpoint_url', endpointInput || null);
   };
 
   const handleTestConnection = async () => {
     if (!currentProvider?.requiresApiKey || !apiKeyInput) return;
+    if (!inlineSecretsAllowed) {
+      toast.error(t('profile.inlineSecretsDisabled', 'Inline API keys are disabled by policy.'));
+      return;
+    }
     
     setTestStatus('testing');
     
@@ -69,6 +93,12 @@ export function STTConfigurationCard({ settings, onSave, isSaving, disabled }: S
           setTestStatus('error');
         }
       } else if (settings.stt_provider === 'custom' && endpointInput) {
+        const check = validateExternalUrl(endpointInput);
+        if (!check.ok) {
+          setTestStatus('error');
+          toast.error('Endpoint invalido');
+          return;
+        }
         // Test custom endpoint (just check if it responds)
         const response = await fetch(endpointInput, {
           method: 'HEAD',
@@ -167,47 +197,58 @@ export function STTConfigurationCard({ settings, onSave, isSaving, disabled }: S
               <Key className="h-4 w-4" />
               {t('profile.sttApiKey', 'Chave da API')}
             </Label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Input
-                  type={showApiKey ? 'text' : 'password'}
-                  value={apiKeyInput}
-                  onChange={(e) => setApiKeyInput(e.target.value)}
-                  placeholder={settings.stt_provider === 'openai-whisper' ? 'sk-...' : 'Sua chave de API'}
-                  disabled={disabled || isSaving}
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
-                  {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-              <Button
-                onClick={handleSaveApiKey}
-                disabled={disabled || isSaving || !apiKeyInput}
-                size="sm"
-              >
-                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.save', 'Salvar')}
-              </Button>
-            </div>
-            
-            {settings.stt_provider === 'openai-whisper' && (
-              <p className="text-xs text-muted-foreground">
-                Obtenha sua API key em{' '}
-                <a 
-                  href="https://platform.openai.com/api-keys" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline"
-                >
-                  platform.openai.com/api-keys
-                </a>
-              </p>
+            {!inlineSecretsAllowed ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  {t('profile.inlineSecretsDisabled', 'Inline API keys are disabled by policy.')}
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      type={showApiKey ? 'text' : 'password'}
+                      value={apiKeyInput}
+                      onChange={(e) => setApiKeyInput(e.target.value)}
+                      placeholder={settings.stt_provider === 'openai-whisper' ? 'sk-...' : 'Sua chave de API'}
+                      disabled={disabled || isSaving}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                      onClick={() => setShowApiKey(!showApiKey)}
+                    >
+                      {showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                  <Button
+                    onClick={handleSaveApiKey}
+                    disabled={disabled || isSaving || !apiKeyInput}
+                    size="sm"
+                  >
+                    {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : t('common.save', 'Salvar')}
+                  </Button>
+                </div>
+                
+                {settings.stt_provider === 'openai-whisper' && (
+                  <p className="text-xs text-muted-foreground">
+                    Obtenha sua API key em{' '}
+                    <a 
+                      href="https://platform.openai.com/api-keys" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      platform.openai.com/api-keys
+                    </a>
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}

@@ -1,6 +1,6 @@
 # ADR 0012: Observability and SLOs
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-01-17
 
 ## Context
@@ -19,4 +19,3 @@ gate for enterprise builds.
 
 ## Alternatives Considered
 - Ad-hoc logging only (insufficient for enterprise operations).
-

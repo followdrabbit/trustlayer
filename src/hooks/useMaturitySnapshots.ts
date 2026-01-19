@@ -8,17 +8,28 @@ import {
   FrameworkCategorySnapshot
 } from '@/lib/database';
 import { calculateOverallMetrics, getFrameworkCoverage } from '@/lib/scoring';
-import { questions as defaultQuestions } from '@/lib/dataset';
+import { questions as defaultQuestions, loadCatalogFromDatabase } from '@/lib/dataset';
 import { getAllCustomQuestions, getDisabledQuestions, getEnabledFrameworks } from '@/lib/database';
-import { getQuestionFrameworkIds } from '@/lib/frameworks';
+import { getQuestionFrameworkIds, loadFrameworksFromDatabase } from '@/lib/frameworks';
+import { useUserRole } from '@/hooks/useUserRole';
+import { canEditAssessments } from '@/lib/roles';
+import { exportAnalyticsSnapshot } from '@/lib/analyticsExport';
 
 export function useMaturitySnapshots() {
   const { answers, isLoading, selectedSecurityDomain } = useAnswersStore();
+  const { role } = useUserRole();
+  const canEdit = canEditAssessments(role);
 
   const captureSnapshot = useCallback(async (snapshotType: 'automatic' | 'manual' = 'automatic') => {
+    if (!canEdit) return;
     if (answers.size === 0) return;
 
     try {
+      await Promise.all([
+        loadCatalogFromDatabase(),
+        loadFrameworksFromDatabase(),
+      ]);
+
       // Load all questions considering enabled frameworks
       const [customQuestions, disabledQuestionIds, enabledIds] = await Promise.all([
         getAllCustomQuestions(),
@@ -89,8 +100,7 @@ export function useMaturitySnapshots() {
         coverage: fc.coverage
       }));
 
-      // Save snapshot with security domain
-      await saveMaturitySnapshot({
+      const snapshotPayload = {
         snapshotDate: new Date().toISOString().split('T')[0],
         snapshotType,
         securityDomainId: selectedSecurityDomain || undefined,
@@ -104,16 +114,21 @@ export function useMaturitySnapshots() {
         domainMetrics,
         frameworkMetrics,
         frameworkCategoryMetrics
-      });
+      };
+
+      // Save snapshot with security domain
+      await saveMaturitySnapshot(snapshotPayload);
+      await exportAnalyticsSnapshot(snapshotPayload);
 
       console.log('Maturity snapshot saved successfully for domain:', selectedSecurityDomain);
     } catch (error) {
       console.error('Error saving maturity snapshot:', error);
     }
-  }, [answers, selectedSecurityDomain]);
+  }, [answers, selectedSecurityDomain, canEdit]);
 
   // Auto-capture daily snapshot
   useEffect(() => {
+    if (!canEdit) return;
     if (isLoading || answers.size === 0) return;
 
     const checkAndCaptureSnapshot = async () => {
@@ -134,7 +149,7 @@ export function useMaturitySnapshots() {
     const timeoutId = setTimeout(checkAndCaptureSnapshot, 5000);
     
     return () => clearTimeout(timeoutId);
-  }, [isLoading, answers.size, captureSnapshot, selectedSecurityDomain]);
+  }, [isLoading, answers.size, captureSnapshot, selectedSecurityDomain, canEdit]);
 
   return { captureSnapshot };
 }

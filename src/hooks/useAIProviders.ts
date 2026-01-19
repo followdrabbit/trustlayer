@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
-import type { Json } from '@/integrations/supabase/types';
+import type { Json, Tables } from '@/integrations/supabase/types';
+import { validateExternalUrl } from '@/lib/urlValidation';
+import { isSecretReference } from '@/lib/secretInput';
 
 export interface AIProvider {
   id: string;
@@ -32,6 +34,8 @@ export interface ProviderTemplate {
   requiresApiKey: boolean;
   isLocal?: boolean;
 }
+
+type AIProviderRow = Tables<'ai_providers'>;
 
 export const PROVIDER_TEMPLATES: ProviderTemplate[] = [
   {
@@ -134,51 +138,7 @@ export function useAIProviders() {
   const [isLoading, setIsLoading] = useState(true);
   const [defaultProvider, setDefaultProvider] = useState<AIProvider | null>(null);
 
-  const loadProviders = useCallback(async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('ai_providers')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      const mapped: AIProvider[] = (data || []).map(row => ({
-        id: row.id,
-        userId: row.user_id || '',
-        providerType: row.provider_type as AIProvider['providerType'],
-        name: row.name,
-        isEnabled: row.is_enabled,
-        isDefault: row.is_default,
-        endpointUrl: row.endpoint_url || undefined,
-        modelId: row.model_id || undefined,
-        maxTokens: row.max_tokens || 4096,
-        temperature: Number(row.temperature) || 0.7,
-        systemPrompt: row.system_prompt || undefined,
-        extraConfig: (row.extra_config as Record<string, unknown>) || {},
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-      }));
-
-      setProviders(mapped);
-      setDefaultProvider(mapped.find(p => p.isDefault) || null);
-
-      // If no providers exist, create default Lovable provider
-      if (mapped.length === 0) {
-        await createDefaultProvider();
-      }
-    } catch (error) {
-      console.error('Error loading AI providers:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  const createDefaultProvider = async () => {
+  const createDefaultProvider = useCallback(async () => {
     if (!user) return;
 
     const { data, error } = await supabase
@@ -213,15 +173,73 @@ export function useAIProviders() {
       setProviders([newProvider]);
       setDefaultProvider(newProvider);
     }
-  };
+  }, [user]);
+
+  const loadProviders = useCallback(async () => {
+    if (!user) return;
+    
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('ai_providers')
+        .select(
+          'id, user_id, provider_type, name, is_enabled, is_default, endpoint_url, model_id, max_tokens, temperature, system_prompt, extra_config, created_at, updated_at'
+        )
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      const rows = (data || []) as AIProviderRow[];
+      const mapped: AIProvider[] = rows.map(row => ({
+        id: row.id,
+        userId: row.user_id || '',
+        providerType: row.provider_type as AIProvider['providerType'],
+        name: row.name,
+        isEnabled: row.is_enabled,
+        isDefault: row.is_default,
+        endpointUrl: row.endpoint_url || undefined,
+        modelId: row.model_id || undefined,
+        maxTokens: row.max_tokens || 4096,
+        temperature: Number(row.temperature) || 0.7,
+        systemPrompt: row.system_prompt || undefined,
+        extraConfig: (row.extra_config as Record<string, unknown>) || {},
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      }));
+
+      setProviders(mapped);
+      setDefaultProvider(mapped.find(p => p.isDefault) || null);
+
+      // If no providers exist, create default Lovable provider
+      if (mapped.length === 0) {
+        await createDefaultProvider();
+      }
+    } catch (error) {
+      console.error('Error loading AI providers:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, createDefaultProvider]);
 
   const saveProvider = async (provider: Partial<AIProvider> & { apiKey?: string }): Promise<boolean> => {
     if (!user) return false;
 
     try {
+      if (provider.endpointUrl) {
+        const check = validateExternalUrl(provider.endpointUrl);
+        if (!check.ok) {
+          toast.error('Endpoint invalido');
+          return false;
+        }
+      }
       const extraConfig = (provider.extraConfig || {}) as Json;
       
-      const payload = {
+      const apiKeyValue = (provider.apiKey ?? '').trim();
+      const apiKeyStored = apiKeyValue
+        ? (isSecretReference(apiKeyValue) ? apiKeyValue : btoa(apiKeyValue))
+        : null;
+      const payload: Record<string, unknown> = {
         user_id: user.id,
         provider_type: provider.providerType as string,
         name: provider.name || '',
@@ -233,8 +251,10 @@ export function useAIProviders() {
         temperature: provider.temperature ?? 0.7,
         system_prompt: provider.systemPrompt || null,
         extra_config: extraConfig,
-        api_key_encrypted: provider.apiKey ? btoa(provider.apiKey) : null,
       };
+      if (apiKeyStored) {
+        payload.api_key_encrypted = apiKeyStored;
+      }
 
       if (provider.id) {
         // Update existing
@@ -322,6 +342,12 @@ export function useAIProviders() {
   };
 
   const testConnection = async (provider: Partial<AIProvider> & { apiKey?: string }): Promise<{ success: boolean; message: string }> => {
+    if (provider.endpointUrl) {
+      const check = validateExternalUrl(provider.endpointUrl);
+      if (!check.ok) {
+        return { success: false, message: 'Endpoint invalido' };
+      }
+    }
     // For Lovable, always works
     if (provider.providerType === 'lovable') {
       return { success: true, message: 'Conexão com Lovable AI verificada!' };
@@ -362,3 +388,4 @@ export function useAIProviders() {
     templates: PROVIDER_TEMPLATES,
   };
 }
+

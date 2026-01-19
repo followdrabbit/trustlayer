@@ -1187,7 +1187,7 @@ export function QuestionManagement() {
                 <input
                   ref={importFileRef}
                   type="file"
-                  accept=".csv,.xlsx,.xls"
+                  accept=".xlsx"
                   onChange={handleBulkImportFileSelect}
                   className="hidden"
                   disabled={!bulkImportDomainId}

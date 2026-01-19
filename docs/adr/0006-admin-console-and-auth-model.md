@@ -18,6 +18,7 @@ and self-signup is not desired.
 - Admins can create local users and/or configure LDAP or EntraID integration.
 - The Admin Console is not listed in the sidebar navigation.
 - Remove demo users and demo data flows from enterprise builds.
+- Provide an admin bootstrap step and catalog import flow after installation.
 
 ## Consequences
 - Requires clear role/permission boundaries and dedicated admin routes.

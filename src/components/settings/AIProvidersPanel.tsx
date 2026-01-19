@@ -18,6 +18,7 @@ import { AIProvidersSkeleton } from '@/components/settings/AnimatedSkeleton';
 import { useAIProviders, AIProvider, PROVIDER_TEMPLATES, ProviderTemplate } from '@/hooks/useAIProviders';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { isInlineSecretAllowed, isSecretReference } from '@/lib/secretInput';
 
 export function AIProvidersPanel() {
   const { t } = useTranslation();
@@ -60,11 +61,18 @@ export function AIProvidersPanel() {
       return;
     }
 
+    if (apiKey.trim()) {
+      if (!isSecretReference(apiKey) && !isInlineSecretAllowed()) {
+        toast.error(t('aiProviders.secretReferenceRequired', 'Use env:NAME, file:/path, or secret:ref for secrets.'));
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const success = await saveProvider({
         ...editingProvider,
-        apiKey: apiKey || undefined,
+        apiKey,
       });
 
       if (success) {
@@ -355,6 +363,9 @@ export function AIProvidersPanel() {
                         Deixe em branco para manter a chave atual
                       </p>
                     )}
+                    <p className="text-xs text-muted-foreground">
+                      {t('aiProviders.secretReferenceHint', 'Use env:NAME, file:/path, or secret:ref to reference secrets.')}
+                    </p>
                   </div>
                 )}
 

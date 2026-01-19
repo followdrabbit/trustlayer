@@ -12,11 +12,110 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### Modificado
 - Documentacao atualizada para requisitos enterprise (admin console, sem demo, self-hosted).
 - Roadmap enterprise atualizado com observabilidade, backup/DR, privacidade, proxy e SDLC seguro.
+- Catalogo migrado para leitura via banco de dados (remocao de JSON estatico).
+- Documentacao ajustada para bootstrap admin e importacao inicial do catalogo.
+- Fluxo de autenticacao atualizado para provisionamento por admin (sem signup/demo).
+- Hook de autenticacao ajustado para remover sign-up do cliente.
+- Pagina de configuracoes limitada a preferencias do usuario.
+- Dashboards agora renderizam layouts a partir do catalogo de widgets.
+- Edge Functions now enforce JWT auth, CORS allowlists, and payload size limits.
+- AI assistant now requires authenticated sessions.
+- SIEM forward validates endpoint URLs and applies request timeouts.
+- Edge Function URL validation blocks local/private endpoints unless `ALLOW_LOCAL_ENDPOINTS=true` is set (frontend uses `VITE_ALLOW_LOCAL_ENDPOINTS=true`).
+- Edge Function URL validation no longer falls back to frontend flags; use `ALLOW_LOCAL_ENDPOINTS=true`.
+- AI provider endpoint validation now respects `VITE_ALLOW_LOCAL_ENDPOINTS` for local endpoints (including Ollama).
+- Audit geo lookup disabled by default (opt-in).
+- Preferencias de STT nao retornam API keys quando inline secrets estao desabilitados.
+- Inicializacao de STT agora valida API key/endpoint e bloqueia uso quando a politica de inline secrets nao permite.
+- Edge Functions agora exigem `Content-Type: application/json` e validam roles de mensagens no AI assistant.
+- Audit Log e SIEM Forward validam payloads (allowlist de entity/action e limites basicos de tamanho).
+- Avaliacao em modo somente leitura para role viewer (UI bloqueia edicao).
+- RLS em answers agora bloqueia escrita para role viewer.
+- RLS agora bloqueia escrita para viewer em assessment_meta, custom catalog, disabled lists, annotations, snapshots e question_versions.
+- Seletores de dominio e frameworks agora respeitam role viewer (somente leitura).
+- Comandos de voz bloqueiam troca de dominio para perfis somente leitura.
+- Captura de snapshots agora respeita role viewer (sem escrita).
+- Bootstrap de assessment_meta nao falha quando a role nao permite escrita.
+- Cache de role com TTL por usuario para reduzir consultas repetidas ao perfil.
+- Estado local reverte selecoes de dominio/framework quando a persistencia falha.
+- Avaliacao read-only usa frameworks habilitados quando nao ha selecao salva.
+- Importacao XLSX agora bloqueia macros/objetos embutidos e suporta malware scan opcional.
+- Secret references agora suportam resolver externo via prefixo secret: e SECRET_PROVIDER_URL.
+- Resolver externo agora valida URL, usa proxy e timeout configuravel (SECRET_PROVIDER_TIMEOUT_MS).
+- Documentado contrato do resolver externo e demo local para `secret:`.
+- Exportacao de snapshots para analytics via Edge Function (opcional) e hook no frontend.
+- Documentado contrato de exportacao analytics e demo local.
+- Script de limpeza de retencao para audit logs/snapshots/metricas e politica documentada.
 
 ### Adicionado
 - ADR 0009 para governanca de documentacao e CHANGELOG.
 - ADRs 0012-0016 para observabilidade, backup/DR, privacidade, proxy e SDLC seguro.
+- ADR 0017 para separacao do Admin Console e configuracoes de usuario.
+- ADR 0018 para validacao de URLs e protecao SSRF.
+- ADR 0019 para CSP em modo report-only no frontend.
+- ADR 0021 para estrategia de SSO (OIDC/SAML).
+- ADR 0022 para modelo de RBAC e mapeamento de roles.
+- ADR 0023 para abstracao de acesso a dados e integracao analitica.
+- Dockerfile com runtime non-root e Nginx unprivileged para o frontend.
+- Headers de seguranca no Nginx do frontend.
+- Documento de baseline de seguranca com mapeamento OWASP Top 10.
+- Validacao de URLs para endpoints de integracoes (SSRF baseline).
+- Bloqueio de URLs com credenciais embutidas nas integracoes.
+- HSTS adicionado ao Nginx do frontend.
+- Permissions-Policy ajustado para permitir microfone no frontend.
+- CSP em modo report-only para baseline do frontend.
+- Template de ambiente `.env.example` para configuracao local.
+- Roadmap enterprise atualizado com status das entregas concluídas.
+- Documentacao do Admin Console adicionada.
+- Documentacao atualizada para remover referencias de demo (API, screenshots, post).
+- README/llm.txt limpos de referencias a init-demo.
+- Ajuste no Settings para passar estado de salvamento no STT.
+- Remocao de textos/chaves de demo das traducoes e snapshots de i18n.
+- Edge functions de demo removidas do Supabase config e codigo.
+- Migracao para remover artefatos de demo (policies e usuario) no banco.
+- docs/API.md refeito com endpoints atuais (sem demo).
+- Roadmap enterprise atualizado com status de seguranca/OWASP.
+- Testes basicos para validacao de URL (SSRF baseline).
+- README atualizado com contagem correta de Edge Functions.
+- docs/SETUP.md atualizado com passo do .env.example.
 - Plano de execucao enterprise com gates de teste.
+- Script de seed do catalogo no banco para ambiente local.
+- Documentos de setup e catalogo para importacao inicial.
+- Script de provisionamento do usuario admin via service role.
+- Script de provisionamento de usuarios locais via service role.
+- Painel administrativo com rota protegida e separacao de configuracoes globais.
+- Shared Edge Function HTTP helpers for CORS and security headers.
+- Structured Edge Function logging with request IDs for traceability.
+- Observability baseline and runbooks (incident response + alerts).
+- Backup/DR runbook added.
+- ADR 0013 marked as Accepted (backup and DR baseline).
+- ADR 0020 for observability stack selection.
+- ADR 0012 marked as Accepted (observability/SLO baseline).
+- XLSX template and secure validation for domain catalog import.
+- Domain catalog import now includes preview/dry-run with sample records and integrity warnings.
+- XLSX catalog template now includes templateVersion metadata.
+- Domain catalog import now logs audit events.
+- Bulk question import enforces XLSX-only, size, row, and formula limits.
+- Layouts de dashboards persistidos com editor admin e catalogo de widgets.
+- Outbound proxy support for Edge Functions via HTTP_PROXY/HTTPS_PROXY/NO_PROXY.
+- Secret references (env/file) for AI provider and SIEM credentials.
+- Inline secrets disabled by default (opt-in via VITE_ALLOW_INLINE_SECRETS).
+- API-key STT providers now require VITE_ALLOW_INLINE_SECRETS to store keys.
+- Edge Function logs redact tokens and secrets.
+- Edge Functions accept env/file secret refs for service role and Lovable keys.
+- Admin list queries no longer return stored secret fields.
+- Rate limits configuraveis por Edge Function (AI assistant, audit log, SIEM forward).
+- Limites configuraveis para tamanho total e por mensagem no AI assistant.
+- Politica opcional de timeout de sessao e idle logout configuravel no frontend.
+- Trigger para impedir escalacao de role em perfis por usuarios autenticados.
+- RLS policies para escrita admin-only nas tabelas globais de catalogo.
+- Constraint de roles no perfil (admin, manager, analyst, viewer, user).
+- Provisionamento de usuario atualizado para aceitar novos roles via USER_ROLE.
+- .env.example atualizado com ALLOWED_ORIGINS, MAX_REQUEST_BODY_BYTES e AUDIT_GEO_LOOKUP_ENABLED.
+- AI providers e SIEM integrations agora permitem escrita apenas por administradores.
+
+### Removido
+- Paginas e fluxos de demo/signup no app.
 
 ## [1.2.0] - 2025-01-17
 
