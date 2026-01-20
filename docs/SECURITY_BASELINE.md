@@ -63,6 +63,11 @@ deployments and maps them to the OWASP Top 10.
 - Geo lookup disabled by default (`AUDIT_GEO_LOOKUP_ENABLED=false`).
 - Edge Functions emit structured logs with request IDs.
 - Edge Function logs redact tokens and secrets.
+- Device fingerprinting for session tracking and fraud detection.
+- Anomaly detection with 13 algorithms (brute force, impossible travel, privilege escalation, etc.).
+- User baseline learning for behavioral analysis.
+- Risk scoring (0-100) based on behavioral factors.
+- OpenTelemetry instrumentation for distributed tracing and metrics.
 
 ## A10: Server-Side Request Forgery (SSRF)
 - Restrict outbound calls in server-side integrations.

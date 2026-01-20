@@ -34,7 +34,7 @@ src/
 │   ├── DashboardGRC.tsx         # Governance/Risk/Compliance view
 │   ├── DashboardSpecialist.tsx  # Technical specialist view
 │   ├── Settings.tsx     # Configuration panels
-  �"'   �"o�"?�"? AdminConsole.tsx # Admin-only global configuration
+  �"'   �"o�"?�"? AdminConsole.tsx # Admin-only global configuration
 │   └── Profile.tsx      # User profile
 ├── hooks/               # Custom React hooks
 │   ├── useDashboardMetrics.ts   # Core metrics calculation
@@ -60,6 +60,13 @@ supabase/
     ├── ai-assistant/    # AI chat with multiple providers
     ├── audit-log/       # Audit logging with geolocation
     ├── siem-forward/    # SIEM event forwarding
+    ├── sso-signin/      # SSO session creation
+    ├── sso-provision-user/  # JIT user provisioning
+    ├── saml-validate/   # SAML response validation
+    ├── mfa-totp-enable/ # TOTP MFA setup
+    ├── report-generator/    # Multi-format report generation
+    ├── report-scheduler/    # Scheduled report execution
+    └── analytics-export/    # Analytics data export
 
 docs/
 ├── API.md               # Edge Functions API documentation
@@ -95,7 +102,24 @@ docs/
 - **Commands**: Navigation, domain switching, data queries, exports
 
 ### 5. Integrations
-### 6. Admin Console
+- **SIEM**: JSON, CEF, LEEF, Syslog formats
+- **SSO**: OIDC (Azure AD, Okta, Keycloak, Google, Auth0) and SAML 2.0
+- **MFA**: TOTP (Google Authenticator) and WebAuthn (security keys, biometrics)
+- **OpenTelemetry**: Frontend instrumentation with OTLP exporters
+
+### 6. Audit & Forensics (ADR-0028)
+- **Device Fingerprinting**: Browser, screen, hardware, canvas, WebGL, audio, fonts
+- **Anomaly Detection**: 13 algorithms (brute force, impossible travel, privilege escalation, etc.)
+- **Forensic Search**: Timeline view, user activity dashboard, correlated events
+- **Risk Scoring**: 0-100 based on behavioral factors
+
+### 7. Reporting System (ADR-0026)
+- **Formats**: PDF, Excel, CSV, HTML
+- **Templates**: Executive summary, compliance status, audit report, assessment details
+- **Scheduling**: Cron-based automatic report generation
+- **Distribution**: Email notifications (planned)
+
+### 8. Admin Console
 - **Global settings**: catalog management, framework enablement, SIEM, AI providers, audit logs
 - Catalog imports include preview/dry-run with sample records and integrity checks.
 - XLSX catalog templates include `templateVersion` metadata.

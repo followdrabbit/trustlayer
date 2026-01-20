@@ -11,6 +11,39 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **OpenTelemetry Dependencies**: Pacotes completos para instrumentação frontend (Phase 6)
+  - @opentelemetry/api, @opentelemetry/sdk-trace-web, @opentelemetry/sdk-metrics
+  - Exporters OTLP HTTP para traces e métricas
+  - Auto-instrumentações: fetch, XHR, document-load, user-interaction
+  - Context zone e recursos para propagação de contexto
+- **Report Generator Edge Function**: Geração completa de relatórios (ADR-0026)
+  - Suporte a PDF, Excel, CSV e HTML
+  - Templates configuráveis com seções e styling
+  - Upload automático para Supabase Storage
+  - Integração com report-scheduler para relatórios agendados
+  - Busca de dados dinâmica (executive summary, compliance, audit, assessments, trends)
+  - Placeholder para notificações por email
+- **Device Fingerprinting Service**: Fingerprinting para segurança e detecção de fraude (ADR-0028)
+  - Coleta de características do dispositivo (browser, screen, hardware, timezone)
+  - Canvas fingerprint, WebGL fingerprint, Audio fingerprint, Font detection
+  - Hash SHA-256 para privacidade
+  - Comparação de fingerprints com score de similaridade
+  - Cálculo de risco baseado em mudanças de dispositivo
+  - Extração automática de DeviceInfo (type, os, browser, screenResolution)
+  - Cache de fingerprint com TTL de 5 minutos
+- **Anomaly Detection Service**: Detecção de anomalias e padrões suspeitos (ADR-0028)
+  - 13 algoritmos de detecção:
+    - multiple_failed_logins, brute_force_attempt
+    - ip_change, location_change, impossible_travel
+    - unusual_hours, rapid_actions
+    - privilege_escalation, unauthorized_access
+    - bulk_export, bulk_delete
+    - new_device, concurrent_sessions
+  - Configuração customizável de thresholds
+  - User baseline learning (padrões típicos de comportamento)
+  - Cálculo de risk score (0-100) com fatores ponderados
+  - Severidades: low, medium, high, critical
+  - Suporte a geolocalização e cálculo de distância (Haversine)
 - **Kubernetes Deployment**: Helm charts completos para deployment enterprise (Phase 4)
   - Support para deployment modes: in-cluster, split frontend/backend, on-prem
   - HorizontalPodAutoscaler para frontend (CPU/Memory-based)
