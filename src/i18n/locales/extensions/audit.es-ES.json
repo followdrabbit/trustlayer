@@ -1,0 +1,160 @@
+{
+  "audit": {
+    "title": "Registros de Auditoría",
+    "subtitle": "Sistema integral de auditoría e investigación forense",
+    "timeline": "Línea de Tiempo",
+    "activity": "Actividad",
+    "users": "Usuarios",
+    "forensic": "Forense",
+    "suspicious": "Sospechosos",
+    "recentActivity": "Actividad Reciente",
+    "securityAlerts": "Alertas de Seguridad",
+    "eventsToday": "Eventos Hoy",
+    "activeUsers": "Usuarios Activos",
+    "activeSessions": "Sesiones Activas",
+    "suspiciousEvents": "Eventos Sospechosos",
+    "eventTimeline": "Línea de Tiempo de Eventos",
+    "chronologicalView": "Vista cronológica de todos los eventos de auditoría",
+    "activityFeed": "Feed de Actividad",
+    "organizationSummary": "Resumen de la organización",
+    "userActivity": "Actividad del Usuario",
+    "selectUser": "Seleccione un usuario para ver análisis detallado",
+    "forensicSearch": "Investigación Forense",
+    "advancedSearch": "Búsqueda avanzada y análisis de eventos",
+    "suspiciousEventsOnly": "Solo Eventos Sospechosos",
+    "markedAsSuspicious": "Eventos marcados como sospechosos o con puntuación de riesgo alta",
+    "noPermission": "No tienes permiso para acceder a los registros de auditoría",
+    "onlySuspicious": "Solo Sospechosos",
+    "backToUserList": "← Volver a lista de usuarios",
+    "auditor": "Auditor",
+
+    "events": {
+      "create": "Creado",
+      "update": "Actualizado",
+      "delete": "Eliminado",
+      "login": "Inició sesión",
+      "logout": "Cerró sesión",
+      "loginFailed": "Fallo de inicio de sesión",
+      "passwordReset": "Restableció contraseña",
+      "permissionChange": "Cambió permisos",
+      "export": "Exportado",
+      "import": "Importado",
+      "accessDenied": "Acceso denegado",
+      "suspiciousActivity": "Actividad sospechosa"
+    },
+
+    "resources": {
+      "assessment": "evaluación",
+      "framework": "marco",
+      "control": "control",
+      "evidence": "evidencia",
+      "user": "usuario",
+      "organization": "organización",
+      "role": "rol",
+      "setting": "configuración",
+      "report": "informe",
+      "integration": "integración"
+    },
+
+    "filters": {
+      "eventType": "Tipo de Evento",
+      "resourceType": "Tipo de Recurso",
+      "dateRange": "Rango de Fechas",
+      "startDate": "Fecha Inicial",
+      "endDate": "Fecha Final",
+      "minRiskScore": "Puntuación Mínima de Riesgo",
+      "onlySuspicious": "Solo eventos sospechosos",
+      "showFilters": "Mostrar Filtros",
+      "hideFilters": "Ocultar Filtros",
+      "applyFilters": "Aplicar Filtros",
+      "clearFilters": "Limpiar Filtros"
+    },
+
+    "search": {
+      "placeholder": "Buscar eventos, usuarios, IPs, recursos...",
+      "searching": "Buscando...",
+      "noResults": "No se encontraron eventos en el período seleccionado",
+      "totalResults": "Total de Eventos",
+      "relatedSessions": "Sesiones Relacionadas",
+      "loginAttempts": "Intentos de Inicio de Sesión",
+      "correlatedEvents": "Eventos Correlacionados",
+      "exportResults": "Exportar Resultados"
+    },
+
+    "patterns": {
+      "detected": "Patrones Sospechosos Detectados",
+      "automaticDetection": "Comportamientos anómalos identificados automáticamente",
+      "multipleFailedLogins": "Múltiples fallos de inicio de sesión",
+      "ipChange": "Cambios de dirección IP",
+      "unusualHours": "Actividad en horas inusuales",
+      "privilegeEscalation": "Escalada de privilegios",
+      "risk": "Riesgo",
+      "relatedEvents": "eventos relacionados"
+    },
+
+    "timeline": {
+      "now": "Ahora mismo",
+      "minutesAgo": "hace {{count}}m",
+      "hoursAgo": "hace {{count}}h",
+      "daysAgo": "hace {{count}}d",
+      "additionalDetails": "Detalles adicionales",
+      "noEvents": "No se encontraron eventos en el período seleccionado"
+    },
+
+    "userMetrics": {
+      "totalSessions": "Total de Sesiones",
+      "actionsPerformed": "Acciones Realizadas",
+      "loginRate": "Tasa de Inicio de Sesión",
+      "riskScore": "Puntuación de Riesgo",
+      "successful": "exitosos",
+      "average": "promedio",
+      "pageViews": "vistas de página",
+      "suspiciousEvents": "eventos sospechosos",
+      "normal": "Normal",
+      "loginStatistics": "Estadísticas de Inicio de Sesión",
+      "sessionStatistics": "Estadísticas de Sesión",
+      "totalLogins": "Total de inicios de sesión",
+      "successfulLogins": "Inicios de sesión exitosos",
+      "failedLogins": "Fallos de inicio de sesión",
+      "uniqueIPs": "Direcciones IP únicas",
+      "uniqueDevices": "Dispositivos únicos",
+      "mfaUsage": "Uso de MFA",
+      "totalSessions": "Total de sesiones",
+      "totalDuration": "Duración total",
+      "avgDuration": "Duración promedio",
+      "totalActions": "Total de acciones",
+      "pagesViewed": "Páginas vistas",
+      "actionsPerSession": "Acciones por sesión",
+      "topEventTypes": "Tipos de Eventos Principales",
+      "mostFrequentActivities": "Actividades más frecuentes",
+      "topResources": "Recursos Principales",
+      "mostAccessedResources": "Recursos más accedidos",
+      "activityByHour": "Actividad por Hora",
+      "distributionThroughoutDay": "Distribución de actividades a lo largo del día",
+      "activityTrend": "Tendencia de Actividad",
+      "dailyActivityInPeriod": "Actividad diaria en el período",
+      "events": "eventos"
+    },
+
+    "session": {
+      "active": "Activa",
+      "ended": "Terminada",
+      "duration": "Duración",
+      "startedAt": "Iniciada el",
+      "endedAt": "Terminada el",
+      "lastActivity": "Última actividad",
+      "ipAddress": "Dirección IP",
+      "device": "Dispositivo",
+      "authMethod": "Método de Autenticación",
+      "mfaVerified": "MFA Verificado",
+      "pageViews": "Vistas de Página",
+      "actions": "Acciones"
+    },
+
+    "correlation": {
+      "correlatedEvents": "Eventos Correlacionados",
+      "relatedByCorrelationId": "Grupos de eventos relacionados por ID de correlación",
+      "additionalEvents": "+{{count}} eventos adicionales"
+    }
+  }
+}

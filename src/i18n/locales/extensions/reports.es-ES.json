@@ -1,0 +1,175 @@
+{
+  "reports": {
+    "title": "Informes",
+    "subtitle": "Generar, programar y gestionar informes de cumplimiento",
+    "generate": "Generar",
+    "schedules": "Programaciones",
+    "history": "Historial",
+    "templates": "Plantillas",
+    "newReport": "Nuevo Informe",
+    "quickReports": "Informes Rápidos",
+    "customReport": "Informe Personalizado",
+    "generateReport": "Generar Informe",
+    "scheduledReports": "Informes Programados",
+    "reportHistory": "Historial de Informes",
+    "reportTemplates": "Plantillas de Informes",
+    "createTemplate": "Crear Plantilla",
+    "loading": "Cargando...",
+    "generating": "Generando informe...",
+    "generated": "Informe generado exitosamente",
+    "scheduled": "Informe programado exitosamente",
+    "deleted": "Informe eliminado exitosamente",
+
+    "quickActions": {
+      "executiveSummary": "Resumen Ejecutivo",
+      "executiveSummaryDesc": "Visión general de alto nivel de la gobernanza",
+      "complianceStatus": "Estado de Cumplimiento",
+      "complianceStatusDesc": "Desglose del cumplimiento del marco",
+      "gapAnalysis": "Análisis de Brechas",
+      "gapAnalysisDesc": "Análisis detallado de brechas con remediación"
+    },
+
+    "builder": {
+      "template": "Plantilla",
+      "format": "Formato",
+      "dateRange": "Rango de Fechas",
+      "filters": "Filtros",
+      "recipients": "Destinatarios",
+      "selectTemplate": "Seleccionar una plantilla",
+      "selectFormat": "Seleccionar formato",
+      "last7Days": "Últimos 7 días",
+      "last30Days": "Últimos 30 días",
+      "last90Days": "Últimos 90 días",
+      "custom": "Personalizado",
+      "addRecipient": "Agregar destinatario",
+      "emailRecipients": "Destinatarios de correo (separados por comas)"
+    },
+
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel",
+      "csv": "CSV",
+      "html": "HTML",
+      "json": "JSON"
+    },
+
+    "schedules": {
+      "title": "Programaciones de Informes",
+      "newSchedule": "Nueva Programación",
+      "editSchedule": "Editar Programación",
+      "deleteSchedule": "Eliminar Programación",
+      "enableSchedule": "Habilitar Programación",
+      "disableSchedule": "Deshabilitar Programación",
+      "scheduleName": "Nombre de Programación",
+      "frequency": "Frecuencia",
+      "nextRun": "Próxima ejecución",
+      "lastRun": "Última ejecución",
+      "recipients": "destinatarios",
+      "enabled": "Habilitado",
+      "disabled": "Deshabilitado",
+      "noSchedules": "Aún no hay informes programados",
+      "createFirst": "Crea tu primera programación para automatizar informes",
+
+      "frequencies": {
+        "daily": "Diario",
+        "weekly": "Semanal",
+        "monthly": "Mensual",
+        "quarterly": "Trimestral",
+        "custom": "Personalizado (Cron)"
+      },
+
+      "presets": {
+        "daily9am": "Todos los días a las 9:00 AM",
+        "weeklyMonday": "Todos los lunes a las 9:00 AM",
+        "monthlyFirst": "Primer día del mes a las 10:00 AM",
+        "quarterlyFirst": "Primer lunes del trimestre a las 9:00 AM"
+      }
+    },
+
+    "history": {
+      "title": "Historial de Informes",
+      "viewDownload": "Ver y descargar informes generados anteriormente",
+      "report": "Informe",
+      "generated": "Generado",
+      "format": "Formato",
+      "status": "Estado",
+      "actions": "Acciones",
+      "download": "Descargar",
+      "delete": "Eliminar",
+      "noHistory": "Aún no se han generado informes",
+      "generateFirst": "Genera tu primer informe para verlo aquí",
+
+      "filters": {
+        "allTemplates": "Todas las plantillas",
+        "last30Days": "Últimos 30 días",
+        "last90Days": "Últimos 90 días",
+        "allTime": "Todo el tiempo"
+      },
+
+      "status": {
+        "pending": "Pendiente",
+        "generating": "Generando",
+        "completed": "Completado",
+        "failed": "Fallido",
+        "expired": "Expirado"
+      }
+    },
+
+    "templates": {
+      "title": "Plantillas de Informes",
+      "subtitle": "Plantillas de informes reutilizables con configuraciones personalizadas",
+      "system": "Sistema",
+      "custom": "Personalizado",
+      "featured": "Destacado",
+      "usedTimes": "Usado {{count}} veces",
+      "noTemplates": "No hay plantillas disponibles",
+      "createCustom": "Crear una plantilla personalizada",
+
+      "types": {
+        "executiveSummary": "Resumen Ejecutivo",
+        "complianceStatus": "Estado de Cumplimiento",
+        "gapAnalysis": "Análisis de Brechas",
+        "assessmentReport": "Informe de Evaluación",
+        "frameworkReport": "Informe de Marco",
+        "auditReport": "Informe de Auditoría",
+        "custom": "Informe Personalizado"
+      }
+    },
+
+    "configuration": {
+      "title": "Configuración de Informe",
+      "general": "General",
+      "content": "Contenido",
+      "styling": "Estilo",
+      "delivery": "Entrega",
+      "reportName": "Nombre del Informe",
+      "description": "Descripción",
+      "template": "Plantilla",
+      "includeCharts": "Incluir Gráficos",
+      "includeTables": "Incluir Tablas",
+      "includeTimeline": "Incluir Línea de Tiempo",
+      "coverPage": "Página de Portada",
+      "tableOfContents": "Tabla de Contenidos",
+      "appendix": "Apéndice",
+      "primaryColor": "Color Primario",
+      "fontFamily": "Familia de Fuente",
+      "fontSize": "Tamaño de Fuente",
+      "logo": "Logo",
+      "header": "Encabezado",
+      "footer": "Pie de Página",
+      "emailSubject": "Asunto del Correo",
+      "emailBody": "Cuerpo del Correo",
+      "attachFormat": "Formato del Adjunto"
+    },
+
+    "errors": {
+      "generateFailed": "Error al generar el informe",
+      "scheduleFailed": "Error al programar el informe",
+      "deleteFailed": "Error al eliminar el informe",
+      "downloadFailed": "Error al descargar el informe",
+      "invalidTemplate": "Plantilla inválida",
+      "noData": "No hay datos disponibles para los filtros seleccionados",
+      "permissionDenied": "Permiso denegado"
+    }
+  }
+}

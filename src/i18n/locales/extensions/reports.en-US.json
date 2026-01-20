@@ -1,0 +1,175 @@
+{
+  "reports": {
+    "title": "Reports",
+    "subtitle": "Generate, schedule, and manage compliance reports",
+    "generate": "Generate",
+    "schedules": "Schedules",
+    "history": "History",
+    "templates": "Templates",
+    "newReport": "New Report",
+    "quickReports": "Quick Reports",
+    "customReport": "Custom Report",
+    "generateReport": "Generate Report",
+    "scheduledReports": "Scheduled Reports",
+    "reportHistory": "Report History",
+    "reportTemplates": "Report Templates",
+    "createTemplate": "Create Template",
+    "loading": "Loading...",
+    "generating": "Generating report...",
+    "generated": "Report generated successfully",
+    "scheduled": "Report scheduled successfully",
+    "deleted": "Report deleted successfully",
+
+    "quickActions": {
+      "executiveSummary": "Executive Summary",
+      "executiveSummaryDesc": "High-level governance overview",
+      "complianceStatus": "Compliance Status",
+      "complianceStatusDesc": "Framework compliance breakdown",
+      "gapAnalysis": "Gap Analysis",
+      "gapAnalysisDesc": "Detailed gap analysis with remediation"
+    },
+
+    "builder": {
+      "template": "Template",
+      "format": "Format",
+      "dateRange": "Date Range",
+      "filters": "Filters",
+      "recipients": "Recipients",
+      "selectTemplate": "Select a template",
+      "selectFormat": "Select format",
+      "last7Days": "Last 7 days",
+      "last30Days": "Last 30 days",
+      "last90Days": "Last 90 days",
+      "custom": "Custom",
+      "addRecipient": "Add recipient",
+      "emailRecipients": "Email recipients (comma separated)"
+    },
+
+    "formats": {
+      "pdf": "PDF",
+      "excel": "Excel",
+      "csv": "CSV",
+      "html": "HTML",
+      "json": "JSON"
+    },
+
+    "schedules": {
+      "title": "Report Schedules",
+      "newSchedule": "New Schedule",
+      "editSchedule": "Edit Schedule",
+      "deleteSchedule": "Delete Schedule",
+      "enableSchedule": "Enable Schedule",
+      "disableSchedule": "Disable Schedule",
+      "scheduleName": "Schedule Name",
+      "frequency": "Frequency",
+      "nextRun": "Next run",
+      "lastRun": "Last run",
+      "recipients": "recipients",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "noSchedules": "No scheduled reports yet",
+      "createFirst": "Create your first schedule to automate reports",
+
+      "frequencies": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly",
+        "quarterly": "Quarterly",
+        "custom": "Custom (Cron)"
+      },
+
+      "presets": {
+        "daily9am": "Every day at 9:00 AM",
+        "weeklyMonday": "Every Monday at 9:00 AM",
+        "monthlyFirst": "First day of month at 10:00 AM",
+        "quarterlyFirst": "First Monday of quarter at 9:00 AM"
+      }
+    },
+
+    "history": {
+      "title": "Report History",
+      "viewDownload": "View and download previously generated reports",
+      "report": "Report",
+      "generated": "Generated",
+      "format": "Format",
+      "status": "Status",
+      "actions": "Actions",
+      "download": "Download",
+      "delete": "Delete",
+      "noHistory": "No reports generated yet",
+      "generateFirst": "Generate your first report to see it here",
+
+      "filters": {
+        "allTemplates": "All templates",
+        "last30Days": "Last 30 days",
+        "last90Days": "Last 90 days",
+        "allTime": "All time"
+      },
+
+      "status": {
+        "pending": "Pending",
+        "generating": "Generating",
+        "completed": "Completed",
+        "failed": "Failed",
+        "expired": "Expired"
+      }
+    },
+
+    "templates": {
+      "title": "Report Templates",
+      "subtitle": "Reusable report templates with custom configurations",
+      "system": "System",
+      "custom": "Custom",
+      "featured": "Featured",
+      "usedTimes": "Used {{count}} times",
+      "noTemplates": "No templates available",
+      "createCustom": "Create a custom template",
+
+      "types": {
+        "executiveSummary": "Executive Summary",
+        "complianceStatus": "Compliance Status",
+        "gapAnalysis": "Gap Analysis",
+        "assessmentReport": "Assessment Report",
+        "frameworkReport": "Framework Report",
+        "auditReport": "Audit Report",
+        "custom": "Custom Report"
+      }
+    },
+
+    "configuration": {
+      "title": "Report Configuration",
+      "general": "General",
+      "content": "Content",
+      "styling": "Styling",
+      "delivery": "Delivery",
+      "reportName": "Report Name",
+      "description": "Description",
+      "template": "Template",
+      "includeCharts": "Include Charts",
+      "includeTables": "Include Tables",
+      "includeTimeline": "Include Timeline",
+      "coverPage": "Cover Page",
+      "tableOfContents": "Table of Contents",
+      "appendix": "Appendix",
+      "primaryColor": "Primary Color",
+      "fontFamily": "Font Family",
+      "fontSize": "Font Size",
+      "logo": "Logo",
+      "header": "Header",
+      "footer": "Footer",
+      "emailSubject": "Email Subject",
+      "emailBody": "Email Body",
+      "attachFormat": "Attachment Format"
+    },
+
+    "errors": {
+      "generateFailed": "Failed to generate report",
+      "scheduleFailed": "Failed to schedule report",
+      "deleteFailed": "Failed to delete report",
+      "downloadFailed": "Failed to download report",
+      "invalidTemplate": "Invalid template",
+      "noData": "No data available for the selected filters",
+      "permissionDenied": "Permission denied"
+    }
+  }
+}

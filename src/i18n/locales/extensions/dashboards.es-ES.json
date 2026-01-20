@@ -1,0 +1,167 @@
+{
+  "dashboards": {
+    "title": "Tableros",
+    "subtitle": "Tableros personalizados con widgets de arrastrar y soltar",
+    "myDashboards": "Mis Tableros",
+    "recent": "Recientes",
+    "favorites": "Favoritos",
+    "templates": "Plantillas",
+    "createNew": "Crear Nuevo Tablero",
+    "createFromTemplate": "Crear desde Plantilla",
+    "editDashboard": "Editar Tablero",
+    "deleteDashboard": "Eliminar Tablero",
+    "shareDashboard": "Compartir Tablero",
+    "cloneDashboard": "Clonar Tablero",
+    "setAsDefault": "Establecer como Predeterminado",
+    "addWidget": "Agregar Widget",
+    "removeWidget": "Eliminar Widget",
+    "configureWidget": "Configurar Widget",
+    "refreshWidget": "Actualizar Widget",
+    "exportDashboard": "Exportar Tablero",
+    "noDashboards": "Aún no hay tableros",
+    "createFirst": "Crea tu primer tablero para comenzar",
+    "loading": "Cargando tablero...",
+    "saving": "Guardando...",
+    "saved": "Tablero guardado exitosamente",
+    "deleted": "Tablero eliminado exitosamente",
+    "cloned": "Tablero clonado exitosamente",
+
+    "builder": {
+      "title": "Constructor de Tableros",
+      "dragAndDrop": "Arrastra y suelta widgets para personalizar tu tablero",
+      "grid": "Cuadrícula",
+      "preview": "Vista Previa",
+      "settings": "Configuración",
+      "addWidget": "Agregar Widget",
+      "widgetLibrary": "Biblioteca de Widgets",
+      "searchWidgets": "Buscar widgets...",
+      "noWidgets": "No se encontraron widgets",
+      "layoutSettings": "Configuración de Diseño",
+      "columns": "Columnas",
+      "rowHeight": "Altura de Fila",
+      "gap": "Espacio",
+      "save": "Guardar Tablero",
+      "cancel": "Cancelar",
+      "unsavedChanges": "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?"
+    },
+
+    "widgets": {
+      "kpiCard": "Tarjeta KPI",
+      "kpiCardDesc": "Mostrar un único indicador clave de rendimiento",
+      "metricTrend": "Métrica con Tendencia",
+      "metricTrendDesc": "Mostrar una métrica con indicador de tendencia",
+      "gauge": "Gráfico de Medidor",
+      "gaugeDesc": "Medidor circular para valores porcentuales",
+      "lineChart": "Gráfico de Líneas",
+      "lineChartDesc": "Gráfico de líneas de series temporales",
+      "barChart": "Gráfico de Barras",
+      "barChartDesc": "Gráfico de barras vertical u horizontal",
+      "pieChart": "Gráfico Circular",
+      "pieChartDesc": "Gráfico circular o de dona",
+      "areaChart": "Gráfico de Área",
+      "areaChartDesc": "Gráfico de área apilado",
+      "dataTable": "Tabla de Datos",
+      "dataTableDesc": "Tabla de datos ordenable y filtrable",
+      "list": "Vista de Lista",
+      "listDesc": "Lista simple de elementos",
+      "timeline": "Línea de Tiempo de Actividad",
+      "timelineDesc": "Línea de tiempo de eventos cronológicos",
+      "activityFeed": "Feed de Actividad",
+      "activityFeedDesc": "Feed de actividad reciente",
+      "text": "Widget de Texto",
+      "textDesc": "Contenido de texto enriquecido",
+      "iframe": "Contenido Incrustado",
+      "iframeDesc": "Incrustar contenido externo vía iframe"
+    },
+
+    "categories": {
+      "metric": "Métricas",
+      "chart": "Gráficos",
+      "data": "Datos",
+      "audit": "Auditoría",
+      "custom": "Personalizado"
+    },
+
+    "templates": {
+      "executive": "Resumen Ejecutivo",
+      "executiveDesc": "KPIs de alto nivel y tendencias para ejecutivos",
+      "compliance": "Tablero de Cumplimiento",
+      "complianceDesc": "Métricas detalladas de cumplimiento y análisis",
+      "security": "Monitoreo de Seguridad",
+      "securityDesc": "Eventos de seguridad y registro de auditoría",
+      "operations": "Tablero de Operaciones",
+      "operationsDesc": "Métricas operacionales y salud del sistema",
+      "custom": "Tablero Personalizado",
+      "customDesc": "Comenzar con un lienzo en blanco",
+      "featured": "Destacado",
+      "usedBy": "Usado {{count}} veces",
+      "preview": "Vista Previa",
+      "useTemplate": "Usar Plantilla"
+    },
+
+    "visibility": {
+      "private": "Privado",
+      "privateDesc": "Solo tú puedes ver este tablero",
+      "shared": "Compartido",
+      "sharedDesc": "Compartido con roles específicos",
+      "organization": "Organización",
+      "organizationDesc": "Todos los miembros de la organización pueden ver",
+      "public": "Público",
+      "publicDesc": "Cualquiera con el enlace puede ver"
+    },
+
+    "sharing": {
+      "shareLink": "Enlace para Compartir",
+      "copyLink": "Copiar Enlace",
+      "linkCopied": "Enlace copiado al portapapeles",
+      "expiresIn": "Expira en",
+      "noExpiration": "Sin expiración",
+      "generateLink": "Generar Enlace para Compartir",
+      "revokeLink": "Revocar Enlace",
+      "linkRevoked": "Enlace para compartir revocado",
+      "allowedRoles": "Roles Permitidos",
+      "selectRoles": "Selecciona los roles que pueden acceder a este tablero"
+    },
+
+    "dataSource": {
+      "title": "Fuente de Datos",
+      "selectSource": "Seleccionar Fuente de Datos",
+      "createSource": "Crear Fuente de Datos",
+      "editSource": "Editar Fuente de Datos",
+      "deleteSource": "Eliminar Fuente de Datos",
+      "type": "Tipo de Fuente",
+      "query": "Consulta de Base de Datos",
+      "function": "Llamada a Función",
+      "api": "Punto Final de API",
+      "computed": "Datos Computados",
+      "configuration": "Configuración",
+      "caching": "Almacenamiento en Caché",
+      "cacheDuration": "Duración del Caché (segundos)",
+      "testConnection": "Probar Conexión",
+      "connectionSuccess": "Conexión exitosa",
+      "connectionError": "Fallo en la conexión"
+    },
+
+    "preferences": {
+      "title": "Preferencias de Tableros",
+      "defaultDashboard": "Tablero Predeterminado",
+      "selectDefault": "Selecciona tu tablero predeterminado",
+      "theme": "Tema",
+      "compactMode": "Modo Compacto",
+      "autoRefresh": "Actualización Automática",
+      "refreshInterval": "Intervalo de Actualización",
+      "notifications": "Notificaciones",
+      "showNotifications": "Mostrar notificaciones del tablero"
+    },
+
+    "errors": {
+      "loadFailed": "Error al cargar el tablero",
+      "saveFailed": "Error al guardar el tablero",
+      "deleteFailed": "Error al eliminar el tablero",
+      "widgetLoadFailed": "Error al cargar datos del widget",
+      "invalidConfiguration": "Configuración de widget inválida",
+      "permissionDenied": "Permiso denegado",
+      "notFound": "Tablero no encontrado"
+    }
+  }
+}

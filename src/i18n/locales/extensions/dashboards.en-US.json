@@ -1,0 +1,167 @@
+{
+  "dashboards": {
+    "title": "Dashboards",
+    "subtitle": "Custom dashboards with drag-and-drop widgets",
+    "myDashboards": "My Dashboards",
+    "recent": "Recent",
+    "favorites": "Favorites",
+    "templates": "Templates",
+    "createNew": "Create New Dashboard",
+    "createFromTemplate": "Create from Template",
+    "editDashboard": "Edit Dashboard",
+    "deleteDashboard": "Delete Dashboard",
+    "shareDashboard": "Share Dashboard",
+    "cloneDashboard": "Clone Dashboard",
+    "setAsDefault": "Set as Default",
+    "addWidget": "Add Widget",
+    "removeWidget": "Remove Widget",
+    "configureWidget": "Configure Widget",
+    "refreshWidget": "Refresh Widget",
+    "exportDashboard": "Export Dashboard",
+    "noDashboards": "No dashboards yet",
+    "createFirst": "Create your first dashboard to get started",
+    "loading": "Loading dashboard...",
+    "saving": "Saving...",
+    "saved": "Dashboard saved successfully",
+    "deleted": "Dashboard deleted successfully",
+    "cloned": "Dashboard cloned successfully",
+
+    "builder": {
+      "title": "Dashboard Builder",
+      "dragAndDrop": "Drag and drop widgets to customize your dashboard",
+      "grid": "Grid",
+      "preview": "Preview",
+      "settings": "Settings",
+      "addWidget": "Add Widget",
+      "widgetLibrary": "Widget Library",
+      "searchWidgets": "Search widgets...",
+      "noWidgets": "No widgets found",
+      "layoutSettings": "Layout Settings",
+      "columns": "Columns",
+      "rowHeight": "Row Height",
+      "gap": "Gap",
+      "save": "Save Dashboard",
+      "cancel": "Cancel",
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to leave?"
+    },
+
+    "widgets": {
+      "kpiCard": "KPI Card",
+      "kpiCardDesc": "Display a single key performance indicator",
+      "metricTrend": "Metric with Trend",
+      "metricTrendDesc": "Display a metric with trend indicator",
+      "gauge": "Gauge Chart",
+      "gaugeDesc": "Circular gauge for percentage values",
+      "lineChart": "Line Chart",
+      "lineChartDesc": "Time series line chart",
+      "barChart": "Bar Chart",
+      "barChartDesc": "Vertical or horizontal bar chart",
+      "pieChart": "Pie Chart",
+      "pieChartDesc": "Pie or donut chart",
+      "areaChart": "Area Chart",
+      "areaChartDesc": "Stacked area chart",
+      "dataTable": "Data Table",
+      "dataTableDesc": "Sortable and filterable data table",
+      "list": "List View",
+      "listDesc": "Simple list of items",
+      "timeline": "Activity Timeline",
+      "timelineDesc": "Chronological event timeline",
+      "activityFeed": "Activity Feed",
+      "activityFeedDesc": "Recent activity feed",
+      "text": "Text Widget",
+      "textDesc": "Rich text content",
+      "iframe": "Embedded Content",
+      "iframeDesc": "Embed external content via iframe"
+    },
+
+    "categories": {
+      "metric": "Metrics",
+      "chart": "Charts",
+      "data": "Data",
+      "audit": "Audit",
+      "custom": "Custom"
+    },
+
+    "templates": {
+      "executive": "Executive Overview",
+      "executiveDesc": "High-level KPIs and trends for executives",
+      "compliance": "Compliance Dashboard",
+      "complianceDesc": "Detailed compliance metrics and analysis",
+      "security": "Security Monitoring",
+      "securityDesc": "Security events and audit trail",
+      "operations": "Operations Dashboard",
+      "operationsDesc": "Operational metrics and system health",
+      "custom": "Custom Dashboard",
+      "customDesc": "Start with a blank canvas",
+      "featured": "Featured",
+      "usedBy": "Used {{count}} times",
+      "preview": "Preview",
+      "useTemplate": "Use Template"
+    },
+
+    "visibility": {
+      "private": "Private",
+      "privateDesc": "Only you can see this dashboard",
+      "shared": "Shared",
+      "sharedDesc": "Shared with specific roles",
+      "organization": "Organization",
+      "organizationDesc": "All organization members can see",
+      "public": "Public",
+      "publicDesc": "Anyone with the link can see"
+    },
+
+    "sharing": {
+      "shareLink": "Share Link",
+      "copyLink": "Copy Link",
+      "linkCopied": "Link copied to clipboard",
+      "expiresIn": "Expires in",
+      "noExpiration": "No expiration",
+      "generateLink": "Generate Share Link",
+      "revokeLink": "Revoke Link",
+      "linkRevoked": "Share link revoked",
+      "allowedRoles": "Allowed Roles",
+      "selectRoles": "Select roles that can access this dashboard"
+    },
+
+    "dataSource": {
+      "title": "Data Source",
+      "selectSource": "Select Data Source",
+      "createSource": "Create Data Source",
+      "editSource": "Edit Data Source",
+      "deleteSource": "Delete Data Source",
+      "type": "Source Type",
+      "query": "Database Query",
+      "function": "Function Call",
+      "api": "API Endpoint",
+      "computed": "Computed Data",
+      "configuration": "Configuration",
+      "caching": "Caching",
+      "cacheDuration": "Cache Duration (seconds)",
+      "testConnection": "Test Connection",
+      "connectionSuccess": "Connection successful",
+      "connectionError": "Connection failed"
+    },
+
+    "preferences": {
+      "title": "Dashboard Preferences",
+      "defaultDashboard": "Default Dashboard",
+      "selectDefault": "Select your default dashboard",
+      "theme": "Theme",
+      "compactMode": "Compact Mode",
+      "autoRefresh": "Auto Refresh",
+      "refreshInterval": "Refresh Interval",
+      "notifications": "Notifications",
+      "showNotifications": "Show dashboard notifications"
+    },
+
+    "errors": {
+      "loadFailed": "Failed to load dashboard",
+      "saveFailed": "Failed to save dashboard",
+      "deleteFailed": "Failed to delete dashboard",
+      "widgetLoadFailed": "Failed to load widget data",
+      "invalidConfiguration": "Invalid widget configuration",
+      "permissionDenied": "Permission denied",
+      "notFound": "Dashboard not found"
+    }
+  }
+}

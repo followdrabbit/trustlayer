@@ -1,0 +1,160 @@
+{
+  "audit": {
+    "title": "Audit Logs",
+    "subtitle": "Comprehensive audit and forensic investigation system",
+    "timeline": "Timeline",
+    "activity": "Activity",
+    "users": "Users",
+    "forensic": "Forensic",
+    "suspicious": "Suspicious",
+    "recentActivity": "Recent Activity",
+    "securityAlerts": "Security Alerts",
+    "eventsToday": "Events Today",
+    "activeUsers": "Active Users",
+    "activeSessions": "Active Sessions",
+    "suspiciousEvents": "Suspicious Events",
+    "eventTimeline": "Event Timeline",
+    "chronologicalView": "Chronological view of all audit events",
+    "activityFeed": "Activity Feed",
+    "organizationSummary": "Organization summary",
+    "userActivity": "User Activity",
+    "selectUser": "Select a user to see detailed analysis",
+    "forensicSearch": "Forensic Investigation",
+    "advancedSearch": "Advanced search and event analysis",
+    "suspiciousEventsOnly": "Suspicious Events",
+    "markedAsSuspicious": "Events marked as suspicious or with high risk score",
+    "noPermission": "You don't have permission to access audit logs",
+    "onlySuspicious": "Only Suspicious",
+    "backToUserList": "← Back to user list",
+    "auditor": "Auditor",
+
+    "events": {
+      "create": "Created",
+      "update": "Updated",
+      "delete": "Deleted",
+      "login": "Logged in",
+      "logout": "Logged out",
+      "loginFailed": "Login failed",
+      "passwordReset": "Reset password",
+      "permissionChange": "Changed permissions",
+      "export": "Exported",
+      "import": "Imported",
+      "accessDenied": "Access denied",
+      "suspiciousActivity": "Suspicious activity"
+    },
+
+    "resources": {
+      "assessment": "assessment",
+      "framework": "framework",
+      "control": "control",
+      "evidence": "evidence",
+      "user": "user",
+      "organization": "organization",
+      "role": "role",
+      "setting": "setting",
+      "report": "report",
+      "integration": "integration"
+    },
+
+    "filters": {
+      "eventType": "Event Type",
+      "resourceType": "Resource Type",
+      "dateRange": "Date Range",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "minRiskScore": "Minimum Risk Score",
+      "onlySuspicious": "Only suspicious events",
+      "showFilters": "Show Filters",
+      "hideFilters": "Hide Filters",
+      "applyFilters": "Apply Filters",
+      "clearFilters": "Clear Filters"
+    },
+
+    "search": {
+      "placeholder": "Search events, users, IPs, resources...",
+      "searching": "Searching...",
+      "noResults": "No events found in selected period",
+      "totalResults": "Total Events",
+      "relatedSessions": "Related Sessions",
+      "loginAttempts": "Login Attempts",
+      "correlatedEvents": "Correlated Events",
+      "exportResults": "Export Results"
+    },
+
+    "patterns": {
+      "detected": "Suspicious Patterns Detected",
+      "automaticDetection": "Automatically identified anomalous behaviors",
+      "multipleFailedLogins": "Multiple failed logins",
+      "ipChange": "IP address changes",
+      "unusualHours": "Activity at unusual hours",
+      "privilegeEscalation": "Privilege escalation",
+      "risk": "Risk",
+      "relatedEvents": "related events"
+    },
+
+    "timeline": {
+      "now": "Just now",
+      "minutesAgo": "{{count}}m ago",
+      "hoursAgo": "{{count}}h ago",
+      "daysAgo": "{{count}}d ago",
+      "additionalDetails": "Additional details",
+      "noEvents": "No events found in the selected period"
+    },
+
+    "userMetrics": {
+      "totalSessions": "Total Sessions",
+      "actionsPerformed": "Actions Performed",
+      "loginRate": "Login Rate",
+      "riskScore": "Risk Score",
+      "successful": "successful",
+      "average": "average",
+      "pageViews": "page views",
+      "suspiciousEvents": "suspicious events",
+      "normal": "Normal",
+      "loginStatistics": "Login Statistics",
+      "sessionStatistics": "Session Statistics",
+      "totalLogins": "Total logins",
+      "successfulLogins": "Successful logins",
+      "failedLogins": "Failed logins",
+      "uniqueIPs": "Unique IP addresses",
+      "uniqueDevices": "Unique devices",
+      "mfaUsage": "MFA usage",
+      "totalSessions": "Total sessions",
+      "totalDuration": "Total duration",
+      "avgDuration": "Average duration",
+      "totalActions": "Total actions",
+      "pagesViewed": "Pages viewed",
+      "actionsPerSession": "Actions per session",
+      "topEventTypes": "Top Event Types",
+      "mostFrequentActivities": "Most frequent activities",
+      "topResources": "Top Resources",
+      "mostAccessedResources": "Most accessed resources",
+      "activityByHour": "Activity by Hour",
+      "distributionThroughoutDay": "Distribution of activities throughout the day",
+      "activityTrend": "Activity Trend",
+      "dailyActivityInPeriod": "Daily activity in period",
+      "events": "events"
+    },
+
+    "session": {
+      "active": "Active",
+      "ended": "Ended",
+      "duration": "Duration",
+      "startedAt": "Started at",
+      "endedAt": "Ended at",
+      "lastActivity": "Last activity",
+      "ipAddress": "IP Address",
+      "device": "Device",
+      "authMethod": "Authentication Method",
+      "mfaVerified": "MFA Verified",
+      "pageViews": "Page Views",
+      "actions": "Actions"
+    },
+
+    "correlation": {
+      "correlatedEvents": "Correlated Events",
+      "relatedByCorrelationId": "Groups of related events by correlation ID",
+      "additionalEvents": "+{{count}} additional events"
+    }
+  }
+}
