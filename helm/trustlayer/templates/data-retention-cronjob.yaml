@@ -1,0 +1,73 @@
+{{- if .Values.dataRetention.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-data-retention
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: data-retention
+spec:
+  schedule: {{ .Values.dataRetention.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "trustlayer.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: data-retention
+        spec:
+          serviceAccountName: {{ include "trustlayer.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+            - name: retention-cleanup
+              image: postgres:15-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  echo "Starting data retention cleanup"
+
+                  # Change Logs
+                  psql <<EOF
+                  DELETE FROM change_logs
+                  WHERE created_at < NOW() - INTERVAL '{{ .Values.dataRetention.changeLogs }} days';
+                  EOF
+                  echo "Cleaned change_logs"
+
+                  # Maturity Snapshots
+                  psql <<EOF
+                  DELETE FROM maturity_snapshots
+                  WHERE snapshot_date < NOW() - INTERVAL '{{ .Values.dataRetention.snapshots }} days';
+                  EOF
+                  echo "Cleaned maturity_snapshots"
+
+                  # SIEM Metrics
+                  psql <<EOF
+                  DELETE FROM siem_metrics
+                  WHERE recorded_at < NOW() - INTERVAL '{{ .Values.dataRetention.siemMetrics }} days';
+                  EOF
+                  echo "Cleaned siem_metrics"
+
+                  echo "Data retention cleanup completed"
+              env:
+                - name: PGHOST
+                  value: {{ include "trustlayer.postgresql.host" . | quote }}
+                - name: PGPORT
+                  value: {{ include "trustlayer.postgresql.port" . | quote }}
+                - name: PGDATABASE
+                  value: {{ include "trustlayer.postgresql.database" . | quote }}
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql" (include "trustlayer.fullname" .)) }}
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql" (include "trustlayer.fullname" .)) }}
+                      key: password
+{{- end }}

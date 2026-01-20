@@ -1,0 +1,520 @@
+# TrustLayer Helm Chart Values
+# Documentation: https://trustlayer.io/docs/helm
+
+## Global Configuration
+global:
+  ## Deployment mode: "in-cluster", "split", or "on-prem"
+  deploymentMode: "in-cluster"
+
+  ## Domain for ingress
+  domain: "trustlayer.example.com"
+
+  ## Image pull secrets
+  imagePullSecrets: []
+  # - name: regcred
+
+  ## Storage class for persistent volumes
+  storageClass: "standard"
+
+## Frontend Configuration
+frontend:
+  enabled: true
+
+  image:
+    repository: trustlayer/web
+    tag: "1.2.0"
+    pullPolicy: IfNotPresent
+
+  replicaCount: 2
+
+  ## Resource limits
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  ## Autoscaling
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
+  ## Pod Security Context
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 101  # nginx user
+    fsGroup: 101
+    seccompProfile:
+      type: RuntimeDefault
+
+  ## Container Security Context
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+
+  ## Service configuration
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8080
+
+  ## Ingress configuration
+  ingress:
+    enabled: true
+    className: "nginx"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+      nginx.ingress.kubernetes.io/rate-limit: "100"
+    tls:
+      enabled: true
+      secretName: trustlayer-tls
+
+  ## Environment variables
+  env:
+    VITE_ALLOW_LOCAL_ENDPOINTS: "false"
+    VITE_IMPORT_MAX_FILE_BYTES: "5242880"  # 5MB
+    VITE_IMPORT_MAX_CELL_CHARS: "2000"
+    VITE_IMPORT_MAX_ROWS: "5000"
+    VITE_IMPORT_MALWARE_SCAN_REQUIRED: "true"
+    VITE_ALLOW_INLINE_SECRETS: "false"
+    VITE_ANALYTICS_EXPORT_ENABLED: "true"
+    VITE_IDLE_TIMEOUT_MINUTES: "30"
+    VITE_SESSION_MAX_MINUTES: "480"  # 8 hours
+
+  ## Liveness and Readiness probes
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8080
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: 8080
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+## Supabase (Backend)
+supabase:
+  enabled: true
+
+  ## Use external Supabase instance
+  external:
+    enabled: false
+    url: ""
+    anonKey: ""
+    serviceRoleKey: ""
+
+  ## Self-hosted Supabase configuration
+  selfHosted:
+    enabled: true
+
+    ## Kong (API Gateway)
+    kong:
+      image:
+        repository: kong
+        tag: "3.4"
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+
+    ## GoTrue (Auth)
+    auth:
+      image:
+        repository: supabase/gotrue
+        tag: "v2.99.0"
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+    ## PostgREST (API)
+    rest:
+      image:
+        repository: postgrest/postgrest
+        tag: "v11.2.0"
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+
+    ## Realtime
+    realtime:
+      image:
+        repository: supabase/realtime
+        tag: "v2.25.0"
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+    ## Storage API
+    storage:
+      image:
+        repository: supabase/storage-api
+        tag: "v0.43.0"
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 500m
+          memory: 512Mi
+
+      ## S3-compatible backend
+      backend:
+        type: "s3"  # s3, azure, gcs
+        bucket: "trustlayer-storage"
+        region: "us-east-1"
+
+    ## Edge Functions (Deno)
+    functions:
+      image:
+        repository: supabase/edge-runtime
+        tag: "v1.22.0"
+      replicaCount: 2
+      resources:
+        requests:
+          cpu: 200m
+          memory: 256Mi
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+
+      ## Environment variables
+      env:
+        ALLOWED_ORIGINS: ""
+        MAX_REQUEST_BODY_BYTES: "1048576"
+        AUDIT_GEO_LOOKUP_ENABLED: "false"
+        MAX_AI_MESSAGES: "50"
+        MAX_AI_MESSAGE_CHARS: "4000"
+        MAX_AI_TOTAL_CHARS: "20000"
+        RATE_LIMIT_WINDOW_SECONDS: "60"
+        AI_ASSISTANT_RATE_LIMIT_MAX: "60"
+        AUDIT_LOG_RATE_LIMIT_MAX: "120"
+        SIEM_FORWARD_RATE_LIMIT_MAX: "60"
+        ANALYTICS_EXPORT_RATE_LIMIT_MAX: "60"
+
+## PostgreSQL Database
+postgresql:
+  enabled: true
+
+  ## Use external PostgreSQL
+  external:
+    enabled: false
+    host: ""
+    port: 5432
+    database: "trustlayer"
+    username: "postgres"
+    existingSecret: ""  # Secret with password
+
+  ## Internal PostgreSQL (Bitnami chart)
+  auth:
+    username: postgres
+    database: trustlayer
+    existingSecret: "postgresql-secret"
+
+  architecture: replication
+  replication:
+    readReplicas: 2
+
+  primary:
+    persistence:
+      enabled: true
+      size: 20Gi
+      storageClass: "standard"
+
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: 2000m
+        memory: 4Gi
+
+    ## PostgreSQL configuration
+    extendedConfiguration: |
+      max_connections = 200
+      shared_buffers = 512MB
+      effective_cache_size = 2GB
+      maintenance_work_mem = 256MB
+      checkpoint_completion_target = 0.9
+      wal_buffers = 16MB
+      default_statistics_target = 100
+      random_page_cost = 1.1
+      effective_io_concurrency = 200
+      work_mem = 8MB
+      min_wal_size = 1GB
+      max_wal_size = 4GB
+
+  ## Backup configuration
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention: 30  # days
+    storageClass: "standard"
+    size: 50Gi
+
+  ## Metrics (Prometheus)
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+## PgBouncer (Connection Pooler)
+pgbouncer:
+  enabled: true
+
+  image:
+    repository: bitnami/pgbouncer
+    tag: "1.21.0"
+
+  replicaCount: 2
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+  ## Pool configuration
+  poolMode: transaction
+  maxClientConn: 1000
+  defaultPoolSize: 25
+
+## Observability Stack
+observability:
+  ## Prometheus
+  prometheus:
+    enabled: true
+    retention: 30d
+    storageSize: 50Gi
+
+  ## Grafana
+  grafana:
+    enabled: true
+    adminPassword: ""  # Will be generated
+    persistence:
+      enabled: true
+      size: 10Gi
+
+    ## Dashboards
+    dashboardProviders:
+      dashboardproviders.yaml:
+        apiVersion: 1
+        providers:
+          - name: 'default'
+            orgId: 1
+            folder: 'TrustLayer'
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/default
+
+  ## Loki (Log aggregation)
+  loki:
+    enabled: true
+    retention: 30d
+    storageSize: 50Gi
+
+  ## Tempo (Distributed tracing)
+  tempo:
+    enabled: false  # Optional
+    storageSize: 20Gi
+
+  ## OpenTelemetry Collector
+  otelCollector:
+    enabled: true
+    replicaCount: 2
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+
+## Security
+security:
+  ## NetworkPolicies
+  networkPolicies:
+    enabled: true
+
+  ## PodSecurityPolicy / PodSecurityStandards
+  podSecurityPolicy:
+    enabled: false  # Use PodSecurityStandards instead
+
+  podSecurityStandards:
+    enforce: "restricted"
+    audit: "restricted"
+    warn: "restricted"
+
+  ## Secrets Management
+  secrets:
+    ## Use external secret provider
+    externalProvider:
+      enabled: false
+      type: "vault"  # vault, aws, azure, gcp
+      url: ""
+      path: "trustlayer"
+
+    ## Sealed Secrets
+    sealedSecrets:
+      enabled: false
+      controllerName: "sealed-secrets-controller"
+
+## Web Application Firewall (WAF)
+waf:
+  ## Enable ModSecurity WAF
+  enabled: true
+
+  ## Rule engine mode: "On", "DetectionOnly", or "Off"
+  ## DetectionOnly: Log only, don't block (recommended for testing)
+  ## On: Block malicious requests
+  ruleEngine: "DetectionOnly"
+
+  ## Request body limits
+  requestBodyLimit: 13107200  # 12.5 MB (max upload size)
+  requestBodyNoFilesLimit: 131072  # 128 KB (max for non-file POST)
+  requestBodyInMemoryLimit: 131072  # 128 KB (buffer in memory)
+
+  ## Response body handling
+  responseBodyAccess: "Off"  # Usually not needed
+  responseBodyLimit: 524288  # 512 KB
+
+  ## Audit logging
+  auditEngine: "RelevantOnly"  # RelevantOnly, On, or Off
+  debugLogLevel: 0  # 0-9 (0 = off, 9 = verbose)
+
+  ## Status code for blocked requests
+  blockStatusCode: 403
+
+  ## Rate limiting
+  rateLimitRequests: 100  # Max requests per window
+  rateLimitWindow: 60  # Time window in seconds
+
+  ## OWASP Core Rule Set (CRS)
+  owaspCRS:
+    enabled: true
+    version: "3.3.5"
+    # Anomaly scoring threshold (lower = stricter)
+    # 5 = strict, 60 = relaxed
+    anomalyScoreThreshold: 5
+
+  ## Custom rules (optional)
+  ## Add your own ModSecurity rules here
+  customRules: |
+    # Example custom rule
+    # SecRule ARGS "@rx malicious-pattern" "id:9001,phase:2,deny,status:403"
+
+## Backup & Disaster Recovery
+backup:
+  ## Velero integration
+  velero:
+    enabled: false
+    schedule: "0 1 * * *"  # Daily at 1 AM
+    retention: 30  # days
+
+  ## Database backups
+  database:
+    enabled: true
+    schedule: "0 2 * * *"
+    retention: 30
+    storageClass: "standard"
+    size: 100Gi
+
+    ## S3-compatible storage
+    s3:
+      enabled: true
+      bucket: "trustlayer-backups"
+      region: "us-east-1"
+      endpoint: ""  # Leave empty for AWS S3
+
+  ## Restore Testing (RPO/RTO validation)
+  restoreTesting:
+    enabled: true
+    schedule: "0 4 * * 0"  # Weekly on Sunday at 4 AM (after backup)
+    rpoHours: 24  # Recovery Point Objective (max data loss)
+    rtoMinutes: 15  # Recovery Time Objective (max recovery time)
+
+## Data Retention
+dataRetention:
+  enabled: true
+
+  ## CronJob schedule
+  schedule: "0 3 * * 0"  # Weekly on Sunday at 3 AM
+
+  ## Retention periods (days)
+  changeLogs: 365
+  snapshots: 730
+  siemMetrics: 90
+
+  ## Apply deletions (set to false for dry-run)
+  apply: true
+
+## Service Accounts
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "trustlayer"
+
+## RBAC
+rbac:
+  create: true
+
+## Node Selectors
+nodeSelector: {}
+
+## Tolerations
+tolerations: []
+
+## Affinity
+affinity: {}
+  # podAntiAffinity:
+  #   preferredDuringSchedulingIgnoredDuringExecution:
+  #     - weight: 100
+  #       podAffinityTerm:
+  #         labelSelector:
+  #           matchExpressions:
+  #             - key: app.kubernetes.io/name
+  #               operator: In
+  #               values:
+  #                 - trustlayer
+  #         topologyKey: kubernetes.io/hostname

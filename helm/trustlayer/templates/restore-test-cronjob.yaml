@@ -1,0 +1,97 @@
+{{- if .Values.backup.restoreTesting.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-restore-test
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: restore-test
+spec:
+  schedule: {{ .Values.backup.restoreTesting.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "trustlayer.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: restore-test
+        spec:
+          serviceAccountName: {{ include "trustlayer.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+            - name: restore-test
+              image: postgres:15-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+
+                  # Install dependencies
+                  apk add --no-cache bash aws-cli
+
+                  # Copy test script
+                  cat > /tmp/test-restore.sh <<'SCRIPT'
+                  {{- .Files.Get "../../scripts/test-restore.sh" | nindent 18 }}
+                  SCRIPT
+
+                  chmod +x /tmp/test-restore.sh
+
+                  # Run restore test
+                  /tmp/test-restore.sh
+
+                  # Send notification on failure (optional)
+                  if [ $? -ne 0 ]; then
+                    echo "Restore test failed!"
+                    # TODO: Send alert via webhook/email
+                  fi
+              env:
+                - name: PGHOST
+                  value: {{ include "trustlayer.postgresql.host" . | quote }}
+                - name: PGPORT
+                  value: {{ include "trustlayer.postgresql.port" . | quote }}
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql" (include "trustlayer.fullname" .)) }}
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql" (include "trustlayer.fullname" .)) }}
+                      key: password
+                - name: TEST_DATABASE
+                  value: "trustlayer_restore_test"
+                - name: S3_BUCKET
+                  value: {{ .Values.backup.database.s3.bucket | quote }}
+                - name: S3_PREFIX
+                  value: {{ include "trustlayer.fullname" . | quote }}
+                {{- if .Values.backup.database.s3.enabled }}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "trustlayer.fullname" . }}-s3-credentials
+                      key: access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "trustlayer.fullname" . }}-s3-credentials
+                      key: secret-access-key
+                - name: AWS_DEFAULT_REGION
+                  value: {{ .Values.backup.database.s3.region | quote }}
+                {{- if .Values.backup.database.s3.endpoint }}
+                - name: AWS_S3_ENDPOINT
+                  value: {{ .Values.backup.database.s3.endpoint | quote }}
+                {{- end }}
+                {{- end }}
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 512Mi
+                limits:
+                  cpu: 2000m
+                  memory: 2Gi
+{{- end }}

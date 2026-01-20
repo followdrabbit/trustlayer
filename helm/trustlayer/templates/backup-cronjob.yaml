@@ -1,0 +1,99 @@
+{{- if .Values.backup.database.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-db-backup
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  schedule: {{ .Values.backup.database.schedule | quote }}
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "trustlayer.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: backup
+        spec:
+          serviceAccountName: {{ include "trustlayer.serviceAccountName" . }}
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: postgres:15-alpine
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+                  BACKUP_FILE="/backup/trustlayer_${TIMESTAMP}.sql.gz"
+
+                  echo "Starting backup at ${TIMESTAMP}"
+
+                  pg_dump -h ${PGHOST} -p ${PGPORT} -U ${PGUSER} -d ${PGDATABASE} \
+                    --no-owner --no-acl --clean --if-exists \
+                    | gzip > ${BACKUP_FILE}
+
+                  echo "Backup completed: ${BACKUP_FILE}"
+                  ls -lh ${BACKUP_FILE}
+
+                  {{- if .Values.backup.database.s3.enabled }}
+                  # Upload to S3
+                  aws s3 cp ${BACKUP_FILE} \
+                    s3://{{ .Values.backup.database.s3.bucket }}/{{ include "trustlayer.fullname" . }}/${TIMESTAMP}.sql.gz \
+                    --region {{ .Values.backup.database.s3.region }}
+
+                  echo "Uploaded to S3"
+                  {{- end }}
+
+                  # Cleanup old backups
+                  find /backup -name "trustlayer_*.sql.gz" -mtime +{{ .Values.backup.database.retention }} -delete
+
+                  echo "Cleanup completed"
+              env:
+                - name: PGHOST
+                  value: {{ include "trustlayer.postgresql.host" . | quote }}
+                - name: PGPORT
+                  value: {{ include "trustlayer.postgresql.port" . | quote }}
+                - name: PGDATABASE
+                  value: {{ include "trustlayer.postgresql.database" . | quote }}
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql" (include "trustlayer.fullname" .)) }}
+                      key: username
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql" (include "trustlayer.fullname" .)) }}
+                      key: password
+                {{- if .Values.backup.database.s3.enabled }}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "trustlayer.fullname" . }}-s3-credentials
+                      key: access-key-id
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "trustlayer.fullname" . }}-s3-credentials
+                      key: secret-access-key
+                - name: AWS_DEFAULT_REGION
+                  value: {{ .Values.backup.database.s3.region | quote }}
+                {{- if .Values.backup.database.s3.endpoint }}
+                - name: AWS_S3_ENDPOINT
+                  value: {{ .Values.backup.database.s3.endpoint | quote }}
+                {{- end }}
+                {{- end }}
+              volumeMounts:
+                - name: backup-storage
+                  mountPath: /backup
+          volumes:
+            - name: backup-storage
+              persistentVolumeClaim:
+                claimName: {{ include "trustlayer.fullname" . }}-backup
+{{- end }}

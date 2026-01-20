@@ -1,0 +1,16 @@
+{{- if .Values.backup.database.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-backup
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.backup.database.storageClass | default .Values.global.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.backup.database.size }}
+{{- end }}

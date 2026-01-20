@@ -1,0 +1,240 @@
+{{- if .Values.observability.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-grafana-dashboards
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  trustlayer-overview.json: |
+    {
+      "dashboard": {
+        "title": "TrustLayer - Overview",
+        "tags": ["trustlayer", "overview"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Frontend Availability",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "avg(up{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\"}) * 100"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": 0, "color": "red"},
+                    {"value": 99, "color": "yellow"},
+                    {"value": 99.9, "color": "green"}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\"}[5m]))"
+              }
+            ]
+          },
+          {
+            "id": 3,
+            "title": "Error Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\"}[5m])) * 100"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent"
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Response Time (P95)",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\"}[5m])) by (le))"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "s"
+              }
+            }
+          },
+          {
+            "id": 5,
+            "title": "Pod Count",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "count(up{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\"} == 1)"
+              }
+            ]
+          },
+          {
+            "id": 6,
+            "title": "Database Connections",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(pg_stat_database_numbackends{job=\"{{ include \"trustlayer.fullname\" . }}-postgresql\"})"
+              }
+            ]
+          },
+          {
+            "id": 7,
+            "title": "Database Query Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(pg_stat_database_xact_commit{job=\"{{ include \"trustlayer.fullname\" . }}-postgresql\"}[5m]))"
+              }
+            ]
+          },
+          {
+            "id": 8,
+            "title": "Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(container_memory_working_set_bytes{namespace=\"{{ .Release.Namespace }}\",pod=~\"{{ include \"trustlayer.fullname\" . }}.*\"}) by (pod)"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "bytes"
+              }
+            }
+          },
+          {
+            "id": 9,
+            "title": "CPU Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"{{ .Release.Namespace }}\",pod=~\"{{ include \"trustlayer.fullname\" . }}.*\"}[5m])) by (pod)"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percentunit"
+              }
+            }
+          }
+        ]
+      }
+    }
+
+  trustlayer-slo.json: |
+    {
+      "dashboard": {
+        "title": "TrustLayer - SLOs",
+        "tags": ["trustlayer", "slo"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "SLO 1: Login Availability (Target: 99.9%)",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "sum(rate(http_requests_total{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\",path=\"/api/auth/login\",status!~\"5..\"}[28d])) / sum(rate(http_requests_total{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\",path=\"/api/auth/login\"}[28d])) * 100"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": 0, "color": "red"},
+                    {"value": 99, "color": "yellow"},
+                    {"value": 99.9, "color": "green"}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 2,
+            "title": "SLO 2: Assessment Load Latency (Target: P95 < 2.0s)",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\",path=\"/assessment\"}[5m])) by (le))"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "s",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": 0, "color": "green"},
+                    {"value": 2.0, "color": "yellow"},
+                    {"value": 3.0, "color": "red"}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 3,
+            "title": "SLO 3: AI Assistant First Token (Target: P95 < 2.5s)",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, sum(rate(ai_assistant_first_token_seconds_bucket{job=\"{{ include \"trustlayer.fullname\" . }}-functions\"}[5m])) by (le))"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "s",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"value": 0, "color": "green"},
+                    {"value": 2.5, "color": "yellow"},
+                    {"value": 4.0, "color": "red"}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "id": 4,
+            "title": "Error Budget Remaining (28 days)",
+            "type": "gauge",
+            "targets": [
+              {
+                "expr": "(1 - (1 - sum(rate(http_requests_total{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\",status!~\"5..\"}[28d])) / sum(rate(http_requests_total{job=\"{{ include \"trustlayer.fullname\" . }}-frontend\"}[28d])))) / (1 - 0.999) * 100"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percent",
+                "min": 0,
+                "max": 100
+              }
+            }
+          }
+        ]
+      }
+    }
+{{- end }}

@@ -1,0 +1,13 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-frontend-config
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+data:
+  {{- range $key, $value := .Values.frontend.env }}
+  {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}

@@ -1,0 +1,154 @@
+# Dependabot configuration
+# Automatically creates PRs to update dependencies
+# Documentation: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+updates:
+  # ============================================
+  # NPM Dependencies (Frontend)
+  # ============================================
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+
+    # Grouping strategy
+    groups:
+      # Group all React-related packages
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "react-router*"
+          - "@types/react*"
+
+      # Group all testing packages
+      testing:
+        patterns:
+          - "vitest"
+          - "@testing-library/*"
+          - "@vitest/*"
+          - "jsdom"
+
+      # Group all UI/styling packages
+      ui:
+        patterns:
+          - "tailwindcss"
+          - "@radix-ui/*"
+          - "framer-motion"
+          - "lucide-react"
+
+      # Group all build tools
+      build-tools:
+        patterns:
+          - "vite"
+          - "typescript"
+          - "esbuild"
+          - "@vitejs/*"
+
+      # Group all linters/formatters
+      code-quality:
+        patterns:
+          - "eslint"
+          - "prettier"
+          - "@typescript-eslint/*"
+          - "eslint-*"
+
+    # Pull request settings
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: "-"
+
+    # Commit message prefix
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+      include: "scope"
+
+    # Labels
+    labels:
+      - "dependencies"
+      - "automated"
+
+    # Reviewers
+    reviewers:
+      - "trustlayer/developers"
+
+    # Allow only certain types of updates
+    # "security" - only security updates
+    # "all" - all updates (default)
+    versioning-strategy: auto
+
+    # Ignore specific dependencies
+    ignore:
+      # Ignore major version updates for stable packages
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+      # Completely ignore certain packages
+      # - dependency-name: "some-package"
+
+  # ============================================
+  # Docker Dependencies
+  # ============================================
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+
+    commit-message:
+      prefix: "chore(docker)"
+
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"
+
+  # ============================================
+  # GitHub Actions Dependencies
+  # ============================================
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "America/Sao_Paulo"
+
+    commit-message:
+      prefix: "chore(ci)"
+
+    labels:
+      - "dependencies"
+      - "ci"
+      - "automated"
+
+    # Group all GitHub Actions together
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  # ============================================
+  # Helm Chart Dependencies (if using)
+  # ============================================
+  # - package-ecosystem: "docker"
+  #   directory: "/helm/trustlayer"
+  #   schedule:
+  #     interval: "weekly"
+
+# ============================================
+# Dependabot Security Updates
+# ============================================
+# Security updates are enabled by default and run daily
+# They create PRs for vulnerable dependencies automatically
+# Configuration: Settings > Security > Dependabot security updates

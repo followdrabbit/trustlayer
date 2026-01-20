@@ -1,0 +1,83 @@
+{{- if .Values.pgbouncer.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-pgbouncer
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pgbouncer
+spec:
+  replicas: {{ .Values.pgbouncer.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "trustlayer.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: pgbouncer
+  template:
+    metadata:
+      labels:
+        {{- include "trustlayer.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: pgbouncer
+    spec:
+      serviceAccountName: {{ include "trustlayer.serviceAccountName" . }}
+      containers:
+        - name: pgbouncer
+          image: "{{ .Values.pgbouncer.image.repository }}:{{ .Values.pgbouncer.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: postgresql
+              containerPort: 5432
+              protocol: TCP
+          env:
+            - name: POSTGRESQL_HOST
+              value: {{ include "trustlayer.postgresql.host" . | quote }}
+            - name: POSTGRESQL_PORT
+              value: {{ include "trustlayer.postgresql.port" . | quote }}
+            - name: POSTGRESQL_DATABASE
+              value: {{ include "trustlayer.postgresql.database" . | quote }}
+            - name: POSTGRESQL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql" (include "trustlayer.fullname" .)) }}
+                  key: username
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.auth.existingSecret | default (printf "%s-postgresql" (include "trustlayer.fullname" .)) }}
+                  key: password
+            - name: PGBOUNCER_POOL_MODE
+              value: {{ .Values.pgbouncer.poolMode | quote }}
+            - name: PGBOUNCER_MAX_CLIENT_CONN
+              value: {{ .Values.pgbouncer.maxClientConn | quote }}
+            - name: PGBOUNCER_DEFAULT_POOL_SIZE
+              value: {{ .Values.pgbouncer.defaultPoolSize | quote }}
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.pgbouncer.resources | nindent 12 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-pgbouncer
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: pgbouncer
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: postgresql
+  selector:
+    {{- include "trustlayer.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: pgbouncer
+{{- end }}

@@ -1,0 +1,45 @@
+{{- if and .Values.frontend.enabled .Values.frontend.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "trustlayer.fullname" . }}-frontend
+  labels:
+    {{- include "trustlayer.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+  annotations:
+    {{- if .Values.waf.enabled }}
+    # ModSecurity WAF annotations (NGINX Ingress Controller)
+    nginx.ingress.kubernetes.io/enable-modsecurity: "true"
+    nginx.ingress.kubernetes.io/enable-owasp-core-rules: "{{ .Values.waf.owaspCRS.enabled }}"
+    nginx.ingress.kubernetes.io/modsecurity-snippet: |
+      Include /etc/nginx/modsecurity/modsecurity.conf
+      Include /etc/nginx/modsecurity/trustlayer-rules.conf
+      {{- if .Values.waf.owaspCRS.enabled }}
+      Include /etc/nginx/modsecurity/owasp-crs.conf
+      {{- end }}
+    {{- end }}
+    {{- with .Values.frontend.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if .Values.frontend.ingress.className }}
+  ingressClassName: {{ .Values.frontend.ingress.className }}
+  {{- end }}
+  {{- if .Values.frontend.ingress.tls.enabled }}
+  tls:
+    - hosts:
+        - {{ .Values.global.domain }}
+      secretName: {{ .Values.frontend.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.global.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "trustlayer.fullname" . }}-frontend
+                port:
+                  number: {{ .Values.frontend.service.port }}
+{{- end }}

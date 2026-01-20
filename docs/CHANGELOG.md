@@ -9,6 +9,117 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ## [Unreleased]
 
+### Adicionado
+
+- **Kubernetes Deployment**: Helm charts completos para deployment enterprise (Phase 4)
+  - Support para deployment modes: in-cluster, split frontend/backend, on-prem
+  - HorizontalPodAutoscaler para frontend (CPU/Memory-based)
+  - NetworkPolicies para isolamento de rede
+  - PodSecurityContext e SecurityContext para hardening
+  - Liveness e Readiness probes para health checking
+  - Suporte para external PostgreSQL (RDS/on-prem BDS)
+  - Integração com external Supabase instance
+- **Automated Backups**: CronJob para backups automáticos do PostgreSQL (Phase 10)
+  - Upload para S3-compatible storage
+  - Retention policy enforcement
+  - Support para PITR (Point-in-Time Recovery) via WAL archiving
+- **Data Retention**: CronJob automatizado para limpeza de dados antigos (Phase 10)
+  - Cleanup de change_logs, maturity_snapshots, siem_metrics
+  - Configurável via Helm values (retention periods)
+- **CI/CD Pipeline**: GitHub Actions workflow completo com security gates (ADR-0016)
+  - SAST com Semgrep (OWASP Top 10, secrets, security-audit)
+  - SCA com npm audit
+  - Secret scanning com TruffleHog
+  - Container scanning com Trivy (CRITICAL/HIGH vulnerabilities)
+  - SBOM generation (CycloneDX + SPDX)
+  - Image signing com Cosign
+  - SLSA provenance attestation
+  - Automated deployment para staging (develop branch)
+  - Manual approval para production (release tags)
+- **Observability Foundations**: Estrutura base para OpenTelemetry (Phase 6)
+  - Helm values para Prometheus, Grafana, Loki
+  - ServiceMonitors para PostgreSQL metrics
+  - Structured logging preparado para OTEL Collector
+  - Alert rules e dashboards placeholder
+- **Security Hardening**:
+  - PodSecurityStandards enforcement (restricted profile)
+  - Non-root container runtime enforcement
+  - Read-only root filesystem para frontend
+  - Capabilities drop (ALL)
+  - SeccompProfile (RuntimeDefault)
+- **SSO Integration** (ADR-0021): Suporte enterprise para Single Sign-On
+  - OIDC provider integration (Azure AD, Okta, Keycloak, Google, Auth0)
+  - PKCE support para public clients
+  - Just-in-Time (JIT) user provisioning
+  - Role mapping automático (IdP groups → TrustLayer roles)
+  - Edge Functions: sso-provision-user, sso-signin
+  - Componentes React: SSOLoginButton, SSOCallbackHandler
+  - Documentação completa em [docs/SSO_INTEGRATION.md](docs/SSO_INTEGRATION.md)
+- **Observability Enhancements**:
+  - PrometheusRule com 15+ alertas (availability, latency, database, resources)
+  - ServiceMonitors para PostgreSQL e frontend
+  - Grafana dashboards pré-configurados (Overview, SLOs)
+  - Métricas SLO: Login availability (99.9%), Assessment latency (P95 < 2.0s), AI first token (P95 < 2.5s)
+- **Helm Charts Additions**:
+  - PgBouncer deployment com connection pooling
+  - Backup PVC para persistent storage
+  - NetworkPolicies para frontend e PostgreSQL
+  - ConfigMaps para Grafana dashboards
+- **OpenTelemetry Instrumentation** (Fase 6): Observabilidade completa com traces, metrics e logs
+  - Frontend SDK com auto-instrumentation (fetch, XHR, clicks, page loads)
+  - Edge Functions SDK para Deno runtime
+  - Custom metrics para negócio (assessment completion, dashboard load, AI latency, voice commands)
+  - SLO metrics tracking (login availability, latency)
+  - Distributed tracing com W3C Trace Context propagation
+  - React hooks: usePageViewTracking, useRenderTracking
+  - Helper functions: traceAsync, traceSync, recordMetric
+  - OTLP exporters para Prometheus, Tempo/Jaeger, Loki
+  - Documentação completa em [docs/OPENTELEMETRY.md](docs/OPENTELEMETRY.md)
+- **Restore Testing Automation** (Fase 10): Validação automática de backups
+  - Script bash automatizado para restore testing (test-restore.sh)
+  - Validação de integridade de dados (table count, FK constraints)
+  - RPO/RTO compliance checking
+  - CronJob semanal no Helm para testes automatizados
+  - Relatórios de teste com métricas detalhadas
+  - Alertas em caso de falha de restore
+- **SAML 2.0 Support** (ADR-0021): Autenticação SAML para provedores enterprise
+  - SAML provider integration (Azure AD SAML, Okta SAML, Keycloak, Google Workspace, OneLogin, Ping, ADFS)
+  - SP metadata generation automático
+  - Attribute mapping configurável
+  - Role mapping baseado em grupos SAML
+  - Edge Function: saml-validate (validação server-side de SAML responses)
+  - Componentes React: SAMLCallbackHandler, SAMLACSPage
+  - Just-in-Time (JIT) provisioning para usuários SAML
+  - Documentação expandida em [docs/SSO_INTEGRATION.md](docs/SSO_INTEGRATION.md)
+- **Multi-Factor Authentication (MFA)**: Autenticação de múltiplos fatores
+  - **TOTP Support** (RFC 6238):
+    - Compatível com Google Authenticator, Microsoft Authenticator, Authy
+    - QR code generation para easy setup
+    - Backup codes (8 códigos one-time, SHA-256 hashed)
+    - Edge Functions: mfa-totp-enable, mfa-totp-verify-setup, mfa-totp-verify-login, mfa-totp-disable
+  - **WebAuthn Support** (FIDO2):
+    - Security keys (YubiKey, etc.)
+    - Platform authenticators (TouchID, FaceID, Windows Hello)
+    - Multiple credentials per user
+    - Edge Functions: mfa-webauthn-register-begin/complete, mfa-webauthn-login-begin/complete
+  - Tabela `mfa_factors` para armazenar credentials
+  - Tabela `mfa_challenges` para WebAuthn challenges temporários
+  - Audit logging de eventos MFA
+  - Componente React: MFASettings (setup e gerenciamento)
+  - Admin-enforceable MFA (campo `mfa_required` em profiles)
+- **Web Application Firewall (WAF)**: Proteção ModSecurity para Ingress
+  - ModSecurity WAF integration via NGINX Ingress Controller
+  - OWASP Core Rule Set (CRS) 3.3.x support
+  - TrustLayer custom rules (SQL Injection, XSS, Path Traversal, RCE, CSRF)
+  - Rate limiting baseado em IP (configurável)
+  - Scanner detection (Nikto, Nmap, SQLMap, etc.)
+  - File upload protection (extensões perigosas bloqueadas)
+  - Protocol violation detection
+  - Admin endpoint protection
+  - 3 modos de operação: DetectionOnly, On, Off
+  - ConfigMaps: modsecurity-config, modsecurity-rules, modsecurity-data
+  - Documentação completa em [docs/WAF_CONFIGURATION.md](docs/WAF_CONFIGURATION.md)
+
 ### Modificado
 - Documentacao atualizada para requisitos enterprise (admin console, sem demo, self-hosted).
 - Roadmap enterprise atualizado com observabilidade, backup/DR, privacidade, proxy e SDLC seguro.

@@ -1,0 +1,57 @@
+# Prettier ignore file
+
+# Build outputs
+dist/
+build/
+*.min.js
+*.min.css
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Cache
+.cache/
+.parcel-cache/
+.vite/
+
+# Generated files
+.next/
+.nuxt/
+.docusaurus/
+
+# Lock files
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment files
+.env*
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Supabase
+supabase/.temp/
+supabase/functions/.cache/
+
+# Helm
+*.tgz
+Chart.lock
+
+# Docs that should not be formatted
+CHANGELOG.md
