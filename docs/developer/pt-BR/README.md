@@ -4,7 +4,7 @@
 **Perfil**: Developer
 **Idioma**: PT-BR
 **Versão**: 1.0.0
-**Última Atualização**: 2026-01-20
+**Última Atualização**: 2026-01-21
 
 ---
 
@@ -83,7 +83,7 @@ Para desenvolver no TrustLayer, você deve ter:
 - [Performance Optimization](./performance.md)
 - [Security Best Practices](./security.md)
 - [Accessibility (a11y)](./accessibility.md)
-- [Internationalization (i18n)](./i18n.md)
+- [Internationalization (i18n)](./internationalization.md)
 
 ## Quick Start
 

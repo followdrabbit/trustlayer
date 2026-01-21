@@ -4,7 +4,7 @@
 **Perfil**: QA
 **Idioma**: PT-BR
 **Versão**: 1.0.0
-**Última Atualização**: 2026-01-20
+**Última Atualização**: 2026-01-21
 
 ---
 

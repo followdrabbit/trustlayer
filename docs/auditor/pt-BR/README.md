@@ -4,7 +4,7 @@
 **Perfil**: Auditor
 **Idioma**: PT-BR
 **Versão**: 1.0.0
-**Última Atualização**: 2026-01-20
+**Última Atualização**: 2026-01-21
 
 ---
 
@@ -168,7 +168,7 @@ Como auditor, você tem acesso **somente leitura** a:
 ```json
 {
   "id": "log-uuid-123",
-  "timestamp": "2026-01-20T14:32:15.234Z",
+  "timestamp": "2026-01-21T14:32:15.234Z",
   "event_type": "assessment.update",
   "user": {
     "id": "user-uuid-456",
@@ -254,7 +254,7 @@ Como auditor, você tem acesso **somente leitura** a:
 ```
 Event: auth.login
 User: manager@acme.com
-Time: 2026-01-20 03:45:00 UTC (after-hours)
+Time: 2026-01-21 03:45:00 UTC (after-hours)
 Location: Moscou, Rússia (unusual)
 ```
 
@@ -368,7 +368,7 @@ Resource Type:
 │                                      │
 │ Total Sessions (30d): 47             │
 │ Total Events (30d): 1,234            │
-│ Last Login: 2026-01-20 09:15 BRT    │
+│ Last Login: 2026-01-21 09:15 BRT    │
 │ Last IP: 192.168.1.100              │
 │                                      │
 │ ┌──────────────┐  ┌──────────────┐  │
@@ -411,7 +411,7 @@ Mostra padrões de atividade por hora/dia:
 Visualização cronológica interativa:
 
 ```
-2026-01-20
+2026-01-21
 ├─ 09:15 🟢 auth.login (São Paulo)
 ├─ 09:20 🟡 assessment.update
 ├─ 10:45 🟡 dashboard.view
