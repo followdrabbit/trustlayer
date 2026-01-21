@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Docker Compose
 - Removido atributo obsoleto `version: '3.8'` do docker-compose.yml
 - Corrigido flag obsoleto `--only=production` para `--omit=dev` no npm ci
+- Adicionado `--ignore-scripts` no Dockerfile.backend para evitar erro do husky em produção
+
+#### Dependencies
+- Atualizado `jsdom` de 20.0.3 para 27.4.0 (remove warnings de APIs deprecadas)
+- Adicionado `husky` e `lint-staged` às devDependencies
+- Script `prepare` tornado resiliente para ambientes sem husky instalado
 
 ### Added
 
