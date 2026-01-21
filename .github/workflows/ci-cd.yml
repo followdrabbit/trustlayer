@@ -168,7 +168,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             VITE_SUPABASE_URL=${{ secrets.VITE_SUPABASE_URL }}
-            VITE_SUPABASE_PUBLISHABLE_KEY=${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+            VITE_SUPABASE_ANON_KEY=${{ secrets.VITE_SUPABASE_ANON_KEY }}
           provenance: true  # Generate SLSA provenance
           sbom: true  # Generate SBOM
 

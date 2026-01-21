@@ -220,7 +220,7 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_SUPABASE_URL: ${API_EXTERNAL_URL}
-        VITE_SUPABASE_PUBLISHABLE_KEY: ${ANON_KEY}
+        VITE_SUPABASE_ANON_KEY: ${ANON_KEY}
     container_name: trustlayer-frontend
     restart: unless-stopped
     ports:

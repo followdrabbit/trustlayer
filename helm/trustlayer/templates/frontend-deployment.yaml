@@ -45,7 +45,7 @@ spec:
           env:
             - name: VITE_SUPABASE_URL
               value: {{ include "trustlayer.supabase.url" . | quote }}
-            - name: VITE_SUPABASE_PUBLISHABLE_KEY
+            - name: VITE_SUPABASE_ANON_KEY
               valueFrom:
                 secretKeyRef:
                   name: {{ include "trustlayer.fullname" . }}-supabase

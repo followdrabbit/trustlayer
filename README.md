@@ -454,7 +454,7 @@ Build and run the frontend image:
 ```bash
 docker build \
   --build-arg VITE_SUPABASE_URL=http://127.0.0.1:54321 \
-  --build-arg VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key \
+  --build-arg VITE_SUPABASE_ANON_KEY=your-anon-key \
   -t trustlayer-web .
 
 docker run --rm -p 8080:8080 trustlayer-web

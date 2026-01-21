@@ -204,7 +204,7 @@ DATABASE_URL=postgresql://trustlayer:trustlayer_local@localhost:5432/trustlayer
 
 # Supabase (para auth e realtime)
 VITE_SUPABASE_URL=http://127.0.0.1:54321
-VITE_SUPABASE_PUBLISHABLE_KEY=...
+VITE_SUPABASE_ANON_KEY=...
 
 # Email de teste (Mailhog)
 SMTP_HOST=localhost

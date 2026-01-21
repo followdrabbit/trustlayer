@@ -70,7 +70,7 @@ O projeto usa Lovable Cloud, que configura automaticamente as vari√°veis necess√
 
 ```env
 VITE_SUPABASE_URL=sua_url
-VITE_SUPABASE_PUBLISHABLE_KEY=sua_chave
+VITE_SUPABASE_ANON_KEY=sua_chave
 ```
 
 ---

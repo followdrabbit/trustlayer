@@ -307,7 +307,7 @@ spec:
           env:
             - name: VITE_SUPABASE_URL
               value: "https://api.trustlayer.exemplo.com"
-            - name: VITE_SUPABASE_PUBLISHABLE_KEY
+            - name: VITE_SUPABASE_ANON_KEY
               valueFrom:
                 secretKeyRef:
                   name: trustlayer-secrets

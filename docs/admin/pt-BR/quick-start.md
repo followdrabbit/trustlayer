@@ -111,7 +111,7 @@ JWT_SECRET=sua-chave-jwt-super-secreta-aqui
 
 # Supabase
 VITE_SUPABASE_URL=https://seu-supabase.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sua-chave-publica
+VITE_SUPABASE_ANON_KEY=sua-chave-publica
 SUPABASE_SERVICE_ROLE_KEY=sua-chave-de-servico
 
 # Email

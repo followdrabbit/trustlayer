@@ -26,7 +26,7 @@ Este documento descreve todas as variaveis de ambiente utilizadas pelo TrustLaye
 | Variavel | Descricao | Exemplo |
 |----------|-----------|---------|
 | `VITE_SUPABASE_URL` | URL do projeto Supabase | `https://xxx.supabase.co` |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | Chave publica (anon key) | `eyJhbGc...` |
+| `VITE_SUPABASE_ANON_KEY` | Chave publica (anon key) | `eyJhbGc...` |
 
 ### 1.2 Backend (Edge Functions)
 
@@ -251,7 +251,7 @@ ALLOWED_ORIGINS=https://app.trustlayer.io,https://admin.trustlayer.io
 
 # --- Supabase ---
 VITE_SUPABASE_URL=https://xxx.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=eyJhbGciOiJIUzI1NiIs...
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
 
 # --- AI Providers ---
 OPENAI_API_KEY=sk-...
