@@ -128,8 +128,8 @@ check_requirements() {
     else
         local node_version=$(node --version | sed 's/v//')
         local node_major=$(echo $node_version | cut -d. -f1)
-        if [ "$node_major" -lt 18 ]; then
-            log_warning "Node.js versão $node_version encontrada, recomendado 18+"
+        if [ "$node_major" -lt 20 ]; then
+            log_warning "Node.js versão $node_version encontrada, recomendado 20+"
         else
             log_success "Node.js encontrado: v$node_version"
         fi

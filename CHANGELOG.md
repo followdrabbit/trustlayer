@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+#### Node.js 20 Upgrade
+- **Dockerfiles**: Atualizado `node:18-alpine` para `node:20-alpine` em Dockerfile.frontend e Dockerfile.backend
+- **CI/CD Workflows**: Atualizado Node.js de 18 para 20 em ci.yml e ci-cd.yml
+- **Documentation**: Atualizado requisito mínimo de Node.js para 20.0+ em LOCAL_DEVELOPMENT.md e setup.sh
+- **Motivation**: Supabase SDK v2.90.1 requer Node.js >= 20.0.0
+
+#### Environment Variable Standardization
+- **VITE_SUPABASE_ANON_KEY**: Padronizado nome da variável em todo o projeto (anteriormente havia inconsistência com `VITE_SUPABASE_PUBLISHABLE_KEY`)
+- Arquivos atualizados: client.ts, .env.example, .env.local.example, Dockerfile, docker-compose.yml, CI/CD, Helm templates, documentação
+
+#### Docker Compose
+- Removido atributo obsoleto `version: '3.8'` do docker-compose.yml
+- Corrigido flag obsoleto `--only=production` para `--omit=dev` no npm ci
+
 ### Added
 
 #### Local Development Experience (ADR-0029)

@@ -32,7 +32,7 @@ npm run dev
 | --------- | ------------- | --------- |
 | Docker | 20.10+ | `docker --version` |
 | Docker Compose | 2.0+ | `docker compose version` |
-| Node.js | 18.0+ | `node --version` |
+| Node.js | 20.0+ | `node --version` |
 | npm | 9.0+ | `npm --version` |
 
 ---
