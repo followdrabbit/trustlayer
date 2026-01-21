@@ -1,0 +1,148 @@
+# =============================================================================
+# TrustLayer - Docker Compose para Desenvolvimento Local
+# =============================================================================
+# Este arquivo é otimizado para desenvolvimento local sem necessidade de:
+# - Domínio configurado
+# - Certificados SSL
+# - Configurações de produção
+#
+# Uso:
+#   docker compose -f docker-compose.local.yml up -d
+#   # ou via script:
+#   ./scripts/setup.sh
+#   # ou via make:
+#   make up
+# =============================================================================
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # PostgreSQL - Banco de Dados
+  # ============================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: trustlayer-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: trustlayer
+      POSTGRES_PASSWORD: trustlayer_local
+      POSTGRES_DB: trustlayer
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - trustlayer-postgres-data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./postgres/seed-local.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - trustlayer-local
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustlayer -d trustlayer"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # ============================================================================
+  # Supabase Studio - Interface Web para o Banco
+  # ============================================================================
+  # Opcional: descomente se quiser interface gráfica para o banco
+  # supabase-studio:
+  #   image: supabase/studio:latest
+  #   container_name: trustlayer-studio
+  #   restart: unless-stopped
+  #   environment:
+  #     STUDIO_PG_META_URL: http://postgres:5432
+  #     SUPABASE_URL: http://localhost:54321
+  #     SUPABASE_REST_URL: http://localhost:54321/rest/v1/
+  #   ports:
+  #     - "54323:3000"
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - trustlayer-local
+
+  # ============================================================================
+  # Supabase - Auth, Realtime, Storage, Edge Functions
+  # ============================================================================
+  # Para desenvolvimento local completo com Supabase, use:
+  # npx supabase start
+  # Isso levantará todos os serviços do Supabase automaticamente
+
+  # ============================================================================
+  # Mailhog - Servidor de Email para Testes
+  # ============================================================================
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: trustlayer-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    networks:
+      - trustlayer-local
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1m"
+        max-file: "1"
+
+  # ============================================================================
+  # Redis - Cache (Opcional)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: trustlayer-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - trustlayer-redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - trustlayer-local
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    profiles:
+      - with-cache
+
+  # ============================================================================
+  # Adminer - Interface Web para Banco de Dados
+  # ============================================================================
+  adminer:
+    image: adminer:latest
+    container_name: trustlayer-adminer
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: nette
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - trustlayer-local
+    profiles:
+      - with-tools
+
+# ==============================================================================
+# Networks
+# ==============================================================================
+networks:
+  trustlayer-local:
+    driver: bridge
+
+# ==============================================================================
+# Volumes
+# ==============================================================================
+volumes:
+  trustlayer-postgres-data:
+    driver: local
+  trustlayer-redis-data:
+    driver: local

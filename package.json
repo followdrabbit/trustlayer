@@ -17,10 +17,19 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "seed:catalog": "node scripts/seed-catalog.mjs",
     "provision:admin": "node scripts/provision-admin.mjs",
     "provision:user": "node scripts/provision-user.mjs",
-    "retention:cleanup": "node scripts/retention-cleanup.mjs"
+    "retention:cleanup": "node scripts/retention-cleanup.mjs",
+    "setup": "bash scripts/setup.sh",
+    "setup:quick": "bash scripts/setup.sh --quick",
+    "docker:up": "docker compose -f docker-compose.local.yml up -d",
+    "docker:down": "docker compose -f docker-compose.local.yml down",
+    "docker:logs": "docker compose -f docker-compose.local.yml logs -f",
+    "docker:reset": "docker compose -f docker-compose.local.yml down -v && docker compose -f docker-compose.local.yml up -d",
+    "db:shell": "docker compose -f docker-compose.local.yml exec postgres psql -U trustlayer -d trustlayer",
+    "check": "npm run lint && npm run type-check && npm run test"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
