@@ -179,17 +179,16 @@ Módulos podem ser:
 - **Performance**: Code splitting via lazy loading
 
 ## Implementation Plan
-
 ### Phase 1: Core Infrastructure (Sprint 1-2)
-- [ ] Module loader system
-- [ ] Event bus
-- [ ] Service registry
-- [ ] Module manifest schema
+- [x] Module loader system
+- [x] Event bus
+- [x] Service registry
+- [x] Module manifest schema
 
 ### Phase 2: Governance Module Refactoring (Sprint 3-4)
-- [ ] Extrair código atual para módulo `governance`
-- [ ] Implementar manifest
-- [ ] Migrar rotas e navegação
+- [x] Extrair código atual para módulo `governance`
+- [x] Implementar manifest
+- [x] Migrar rotas e navegação
 - [ ] Testes de integração
 
 ### Phase 3: New Module Template (Sprint 5)

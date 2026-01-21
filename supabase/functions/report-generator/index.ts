@@ -194,7 +194,14 @@ serve(async (req) => {
 
     // Send email notifications if recipients provided
     if (recipients && recipients.length > 0) {
-      await sendEmailNotifications(recipients, cc || [], subject, emailBody, outputFiles);
+      await sendEmailNotifications(
+        recipients,
+        cc || [],
+        subject,
+        emailBody,
+        outputFiles.map(f => ({ ...f, filename: `${template.name.replace(/\s+/g, '_')}.${f.format}` })),
+        template.name
+      );
     }
 
     return new Response(
@@ -994,25 +1001,92 @@ async function sendEmailNotifications(
   cc: string[],
   subject: string | undefined,
   body: string | undefined,
-  files: Array<{ format: string; url: string }>
+  files: Array<{ format: string; url: string; filename?: string }>,
+  reportName?: string
 ): Promise<void> {
-  // TODO: Implement email sending via SMTP service or third-party provider
-  // Options: SendGrid, AWS SES, Resend, Mailgun, etc.
+  const emailServiceUrl = Deno.env.get('EMAIL_SERVICE_URL');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL');
+  const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-  console.log('📧 Email notifications would be sent to:', recipients);
-  console.log('   CC:', cc);
-  console.log('   Subject:', subject || 'TrustLayer Report');
-  console.log('   Attachments:', files.length);
+  // If email service is not configured, log and skip
+  if (!emailServiceUrl && !supabaseUrl) {
+    console.log('📧 Email service not configured - skipping email notifications');
+    console.log('   Recipients:', recipients);
+    console.log('   CC:', cc);
+    console.log('   Subject:', subject || 'TrustLayer Report');
+    console.log('   Attachments:', files.length);
+    return;
+  }
 
-  // Placeholder for email implementation
-  // In production, integrate with email service:
-  //
-  // const sendgrid = new SendGrid(Deno.env.get('SENDGRID_API_KEY'));
-  // await sendgrid.send({
-  //   to: recipients,
-  //   cc,
-  //   subject: subject || 'TrustLayer Report',
-  //   html: body || 'Your report is ready.',
-  //   attachments: files.map(f => ({ url: f.url })),
-  // });
+  // Use Supabase Edge Function URL if EMAIL_SERVICE_URL not set
+  const serviceUrl = emailServiceUrl || `${supabaseUrl}/functions/v1/email-service`;
+
+  console.log(`📧 Sending email to ${recipients.length} recipient(s) via email-service`);
+
+  try {
+    // Prepare attachments with proper filenames
+    const attachments = files.map(f => ({
+      filename: f.filename || `report.${f.format}`,
+      url: f.url,
+      contentType: getContentType(f.format),
+    }));
+
+    // Build email request - use template for better formatting
+    const emailRequest = {
+      to: recipients,
+      cc: cc.length > 0 ? cc : undefined,
+      subject: subject || `TrustLayer Report${reportName ? `: ${reportName}` : ''}`,
+      template: body ? undefined : {
+        id: 'report-ready',
+        variables: {
+          report_name: reportName || 'Security Assessment Report',
+          generated_at: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }),
+          format: files.map(f => f.format.toUpperCase()).join(', '),
+          download_url: files[0]?.url || '',
+        },
+      },
+      html: body || undefined,
+      attachments,
+      trackOpens: true,
+      trackClicks: true,
+      metadata: {
+        source: 'report-generator',
+        report_formats: files.map(f => f.format).join(','),
+      },
+    };
+
+    const response = await fetch(serviceUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify(emailRequest),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Email service error (${response.status}):`, errorText);
+      // Don't throw - email failure shouldn't fail the whole report generation
+      return;
+    }
+
+    const result = await response.json();
+    console.log(`✅ Email sent successfully (messageId: ${result.messageId})`);
+
+  } catch (error) {
+    // Log but don't throw - email is secondary to report generation
+    console.error('❌ Failed to send email notification:', error);
+  }
+}
+
+function getContentType(format: string): string {
+  const contentTypes: Record<string, string> = {
+    pdf: 'application/pdf',
+    excel: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    csv: 'text/csv',
+    html: 'text/html',
+    json: 'application/json',
+  };
+  return contentTypes[format] || 'application/octet-stream';
 }

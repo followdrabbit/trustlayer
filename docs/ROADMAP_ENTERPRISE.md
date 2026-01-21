@@ -97,12 +97,12 @@ As melhorias abaixo foram planejadas para a próxima fase do projeto:
 
 | Feature | Status | Priority | ADR |
 |---------|--------|----------|-----|
-| **Multi-Profile Docs** | 📋 Planned | HIGH | ADR-0025 |
-| - Admin documentation (PT/EN/ES) | ⏳ Pending | HIGH | - |
-| - Developer/Sustentação docs (PT/EN/ES) | ⏳ Pending | HIGH | - |
-| - QA/Test documentation (PT/EN/ES) | ⏳ Pending | MEDIUM | - |
-| - User guides (PT/EN/ES) | ⏳ Pending | HIGH | - |
-| - Auditor documentation (PT/EN/ES) | ⏳ Pending | MEDIUM | - |
+| **Multi-Profile Docs** | ✅ Done | HIGH | ADR-0025 |
+| - Admin documentation (PT/EN/ES) | ✅ PT-BR Done | HIGH | - |
+| - Developer/Sustentação docs (PT/EN/ES) | ✅ PT-BR Done | HIGH | - |
+| - QA/Test documentation (PT/EN/ES) | ✅ PT-BR Done | MEDIUM | - |
+| - User guides (PT/EN/ES) | ✅ PT-BR Done | HIGH | - |
+| - Auditor documentation (PT/EN/ES) | ✅ PT-BR Done | MEDIUM | - |
 | **Documentation Portal** | ⏳ Pending | MEDIUM | ADR-0025 |
 | - Search functionality | ⏳ Pending | MEDIUM | - |
 | - PDF export | ⏳ Pending | LOW | - |
@@ -112,11 +112,11 @@ As melhorias abaixo foram planejadas para a próxima fase do projeto:
 
 | Feature | Status | Priority | ADR |
 |---------|--------|----------|-----|
-| **Modular Architecture** | 📋 Planned | HIGH | ADR-0024 |
-| - Module loader system | ⏳ Pending | HIGH | - |
-| - Event bus | ⏳ Pending | HIGH | - |
-| - Service registry | ⏳ Pending | HIGH | - |
-| - Governance module refactoring | ⏳ Pending | MEDIUM | - |
+| **Modular Architecture** | ✅ Done | HIGH | ADR-0024 |
+| - Module loader system | ✅ Done | HIGH | - |
+| - Event bus | ✅ Done | HIGH | - |
+| - Service registry | ✅ Done | HIGH | - |
+| - Governance module refactoring | ✅ Done | MEDIUM | - |
 | **On-Prem Deployment** | ⏳ Pending | HIGH | - |
 | - Separate Dockerfiles (FE/BE) | ⏳ Pending | HIGH | - |
 | - Docker Compose (all-in-one) | ⏳ Pending | HIGH | - |
@@ -131,21 +131,21 @@ As melhorias abaixo foram planejadas para a próxima fase do projeto:
 
 | Feature | Status | Priority | ADR |
 |---------|--------|----------|-----|
-| **Theme System** | 📋 Planned | HIGH | ADR-0027 |
-| - 5+ built-in themes | ⏳ Pending | HIGH | - |
-| - Custom colors/fonts | ⏳ Pending | HIGH | - |
+| **Theme System** | ✅ Done | HIGH | ADR-0027 |
+| - 5+ built-in themes | ✅ Done | HIGH | - |
+| - Custom colors/fonts | ✅ Done | HIGH | - |
 | - Theme customization UI | ⏳ Pending | MEDIUM | - |
-| - High contrast mode (WCAG) | ⏳ Pending | HIGH | - |
-| **Animations** | ⏳ Pending | MEDIUM | ADR-0027 |
-| - Page transitions | ⏳ Pending | MEDIUM | - |
-| - Component animations | ⏳ Pending | LOW | - |
-| - Stagger effects | ⏳ Pending | LOW | - |
-| **AI Assistant Enhancements** | ⏳ Pending | MEDIUM | ADR-0027 |
-| - Draggable positioning | ⏳ Pending | MEDIUM | - |
+| - High contrast mode (WCAG) | ✅ Done | HIGH | - |
+| **Animations** | ✅ Done | MEDIUM | ADR-0027 |
+| - Page transitions | ✅ Done | MEDIUM | - |
+| - Component animations | ✅ Done | LOW | - |
+| - Stagger effects | ✅ Done | LOW | - |
+| **AI Assistant Enhancements** | ✅ Done | MEDIUM | ADR-0027 |
+| - Draggable positioning | ✅ Done | MEDIUM | - |
 | - User enable/disable | ⏳ Pending | HIGH | - |
 | - Global admin toggle | ⏳ Pending | HIGH | - |
-| **Personalization** | ⏳ Pending | MEDIUM | ADR-0027 |
-| - User avatars/photos | ⏳ Pending | MEDIUM | - |
+| **Personalization** | ✅ Partial | MEDIUM | ADR-0027 |
+| - User avatars/photos | ✅ Done | MEDIUM | - |
 | - Custom organization logo | ⏳ Pending | HIGH | - |
 | - Favicon customization | ⏳ Pending | LOW | - |
 | **Custom Dashboards** | ⏳ Pending | HIGH | ADR-0027 |
@@ -161,12 +161,12 @@ As melhorias abaixo foram planejadas para a próxima fase do projeto:
 
 | Feature | Status | Priority | ADR |
 |---------|--------|----------|-----|
-| **Advanced Reporting** | 📋 Planned | HIGH | ADR-0026 |
-| - Reports page/dashboard | ⏳ Pending | HIGH | - |
-| - On-demand generation | ⏳ Pending | HIGH | - |
-| - Scheduled reports | ⏳ Pending | HIGH | - |
-| - Email distribution | ⏳ Pending | HIGH | - |
-| **Report Templates** | ⏳ Pending | HIGH | ADR-0026 |
+| **Advanced Reporting** | ✅ Done | HIGH | ADR-0026 |
+| - Reports page/dashboard | ✅ Done | HIGH | - |
+| - On-demand generation | ✅ Done | HIGH | - |
+| - Scheduled reports | ✅ Done | HIGH | - |
+| - Email distribution | ✅ Done | HIGH | - |
+| **Report Templates** | ✅ Done | HIGH | ADR-0026 |
 | - Executive summary | ⏳ Pending | HIGH | - |
 | - Compliance status | ⏳ Pending | HIGH | - |
 | - Audit reports | ⏳ Pending | HIGH | - |

@@ -17,14 +17,24 @@ TrustLayer is a multi-domain security governance platform built with React, Type
 - **Voice**: Web Speech API, Web Audio API, Web Workers
 
 ## Project Structure
+> The project follows a modular architecture as defined in ADR-0024.
 
 ```
 src/
-├── components/           # React components
+├── core/                # Core application infrastructure
+│   ├── modules/         # Module system (ModuleLoader, EventBus, ServiceRegistry)
+│   ├── routing/         # AppRouter with dynamic module routes
+│   └── init.ts          # Application initialization
+├── modules/             # Business domain modules
+│   └── governance/      # Security Governance module
+│       ├── manifest.ts  # Module manifest (routes, navigation, permissions)
+│       └── pages/       # Module-specific page wrappers
+├── components/          # React components
 │   ├── ui/              # shadcn/ui base components
+│   ├── layout/          # MainLayout and layout components
 │   ├── dashboard/       # Dashboard-specific components
 │   ├── settings/        # Settings/configuration components
-│   ├── ai-assistant/    # AI chat and voice components
+│   ├── ai-assistant/    # AI chat, voice, and draggable assistant
 │   └── auth/            # Authentication components
 ├── pages/               # Route pages
 │   ├── Home.tsx         # Landing/onboarding page
@@ -33,8 +43,10 @@ src/
 │   ├── DashboardExecutive.tsx   # C-level view
 │   ├── DashboardGRC.tsx         # Governance/Risk/Compliance view
 │   ├── DashboardSpecialist.tsx  # Technical specialist view
+│   ├── ReportsPage.tsx  # Reports management
+│   ├── AuditLogsPage.tsx # Audit logs viewer
 │   ├── Settings.tsx     # Configuration panels
-  �"'   �"o�"?�"? AdminConsole.tsx # Admin-only global configuration
+│   ├── AdminConsole.tsx # Admin-only global configuration
 │   └── Profile.tsx      # User profile
 ├── hooks/               # Custom React hooks
 │   ├── useDashboardMetrics.ts   # Core metrics calculation
@@ -42,13 +54,18 @@ src/
 │   ├── useVoiceProfile.ts       # Voice biometrics
 │   ├── useSpeechRecognition.ts  # Speech-to-text
 │   └── useSpeechSynthesis.ts    # Text-to-speech
-├── lib/                 # Business logic
+├── lib/                 # Business logic and utilities
 │   ├── database.ts      # Supabase operations
 │   ├── scoring.ts       # Maturity calculations
 │   ├── frameworks.ts    # Framework management
 │   ├── securityDomains.ts       # Domain management
 │   ├── siemIntegration.ts       # SIEM forwarding
-│   └── auditLog.ts      # Audit logging
+│   ├── auditLog.ts      # Audit logging
+│   ├── theme/           # Theme system (presets, provider, types)
+│   ├── animations/      # Animation library (variants, hooks, components)
+│   ├── avatar/          # User avatar management
+│   ├── email/           # Email service client
+│   └── reporting/       # Report engine
 ├── data/                # (legacy) catalog data moved to database
 ├── i18n/                # Internationalization
 │   └── locales/         # Translation files
@@ -66,13 +83,20 @@ supabase/
     ├── mfa-totp-enable/ # TOTP MFA setup
     ├── report-generator/    # Multi-format report generation
     ├── report-scheduler/    # Scheduled report execution
+    ├── email-service/       # Multi-provider email sending
     └── analytics-export/    # Analytics data export
 
 docs/
+├── admin/               # Admin documentation (PT-BR/EN-US/ES-ES)
+├── developer/           # Developer documentation
+├── qa/                  # QA/Testing documentation
+├── user/                # User guides
+├── auditor/             # Auditor documentation
+├── adr/                 # Architecture Decision Records
+├── runbooks/            # Operational runbooks
 ├── API.md               # Edge Functions API documentation
 ├── ARCHITECTURE.md      # System architecture diagrams
-├── LINKEDIN_POST.md     # Marketing content
-└── screenshots/         # Application screenshots
+└── CHANGELOG.md         # Version history
 ```
 
 ## Key Features
@@ -295,17 +319,3 @@ docker run --rm -p 8080:8080 trustlayer-web
 
 
 - Env template: .env.example (copy to .env and fill values).
-
-
-
-
-
-
-
-
-
-
-
-
-
-

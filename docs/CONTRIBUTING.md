@@ -297,36 +297,22 @@ Mockups, exemplos, etc.
 
 ---
 
-## 📁 Adicionando Novos Frameworks de Segurança
+## 📁 Gerenciamento de Catálogos (Frameworks, Questões)
 
-1. Adicione o framework em `src/data/frameworks.json`:
+A adição de novos frameworks de segurança, domínios, questões e outros dados de catálogo é centralizada no **Admin Console** e gerenciada diretamente no banco de dados. O uso de arquivos JSON (`src/data/*`) foi descontinuado.
 
-```json
-{
-  "framework_id": "NEW_FRAMEWORK",
-  "framework_name": "New Framework Name",
-  "short_name": "NFN",
-  "category": "compliance",
-  "description": "Framework description",
-  "version": "1.0",
-  "security_domain_id": "AI_SECURITY"
-}
-```
+### Como Adicionar Novos Catálogos
 
-2. Adicione questões mapeadas em `src/data/questions.json`:
+1.  **Acesso**: Apenas usuários com a role `admin` podem acessar o Admin Console para gerenciamento de catálogos.
+2.  **Templates**: O Admin Console fornece templates XLSX para importação em massa. Esses templates incluem validação de dados, `templateVersion` e verificações de integridade.
+3.  **Importação**:
+    -   Navegue até `Admin Console` > `Catalog Management`.
+    -   Selecione o tipo de catálogo (ex: Frameworks, Questões Padrão).
+    -   Faça o upload do arquivo XLSX preenchido.
+4.  **Dry-Run**: Antes de importar, use a funcionalidade de "Preview / Dry-Run" para validar os dados e ver um exemplo dos registros que serão criados ou atualizados.
+5.  **Confirmação**: Após a validação, confirme a importação para aplicar as mudanças no banco de dados.
 
-```json
-{
-  "question_id": "DOMAIN-01-Q01",
-  "domain_id": "DOMAIN-01",
-  "subcat_id": "DOMAIN-01-SC01",
-  "question_text": "Question text?",
-  "frameworks": ["NEW_FRAMEWORK", "EXISTING_FRAMEWORK"],
-  "security_domain_id": "AI_SECURITY"
-}
-```
-
-3. Execute os testes e crie PR.
+Para mais detalhes sobre o formato dos templates e o processo de importação, consulte a documentação interna do Admin Console (`/docs/ADMIN_CONSOLE.md`).
 
 ---
 

@@ -1,216 +1,76 @@
-/**
- * Governance Module Manifest
- * Security Governance & Compliance Module
- */
-
 import { lazy } from 'react';
-import type { ModuleManifest } from '@/core/modules';
+import type { ModuleManifest } from '@/core/modules/types'; // Assuming types are in core/modules
 
-const GovernanceModule: ModuleManifest = {
-  // Metadata
+/**
+ * Manifest for the Security Governance Module.
+ * This module encapsulates all features related to GRC, assessments,
+ * and security posture dashboards.
+ */
+export const GovernanceModule: ModuleManifest = {
+  // 1. Metadata
   id: 'governance',
   name: 'Security Governance',
   version: '1.0.0',
-  description: 'GRC and compliance management module',
-  author: 'TrustLayer Team',
-  license: 'Proprietary',
+  description: 'Core module for GRC, security assessments, and compliance management.',
 
-  // Dependencies
-  dependencies: [],
-  peerDependencies: [],
-
-  // Permissions required by this module
+  // 2. Permissions
+  // Defines the permissions this module requires or introduces.
   permissions: [
+    'assessments.create',
     'assessments.read',
-    'assessments.write',
+    'assessments.update',
     'assessments.delete',
-    'dashboards.view',
+    'dashboards.view.executive',
+    'dashboards.view.grc',
+    'dashboards.view.specialist',
     'reports.generate',
-    'reports.export',
   ],
 
-  // Routes
+  // 3. Routes
+  // All pages provided by this module.
   routes: [
     {
-      path: '/assessments',
-      component: lazy(() => import('./pages/AssessmentsPage')),
-      meta: {
-        requiresAuth: true,
-        roles: ['admin', 'manager', 'analyst'],
-        title: 'Assessments',
-        description: 'Manage security assessments',
-      },
+      path: '/assessment',
+      component: lazy(() => import('./pages/Assessment')), // Path relative to module
+      meta: { requiresAuth: true, title: 'Security Assessment' },
     },
     {
-      path: '/assessments/:id',
-      component: lazy(() => import('./pages/AssessmentDetailPage')),
-      meta: {
-        requiresAuth: true,
-        roles: ['admin', 'manager', 'analyst'],
-        title: 'Assessment Details',
-      },
+      path: '/dashboard',
+      component: lazy(() => import('./pages/Dashboard')),
+      meta: { requiresAuth: true, title: 'Dashboard' },
     },
     {
-      path: '/dashboards',
-      component: lazy(() => import('./pages/DashboardsPage')),
-      meta: {
-        requiresAuth: true,
-        title: 'Dashboards',
-        description: 'View security dashboards',
-      },
+      path: '/dashboard/executive',
+      component: lazy(() => import('./pages/DashboardExecutive')),
+      meta: { requiresAuth: true, title: 'Executive Dashboard' },
+    },
+    {
+      path: '/dashboard/grc',
+      component: lazy(() => import('./pages/DashboardGRC')),
+      meta: { requiresAuth: true, title: 'GRC Dashboard' },
+    },
+    {
+      path: '/dashboard/specialist',
+      component: lazy(() => import('./pages/DashboardSpecialist')),
+      meta: { requiresAuth: true, title: 'Specialist Dashboard' },
     },
   ],
 
-  // Navigation menu items
+  // 4. Navigation
+  // Items to be added to the main navigation sidebar.
   navigation: [
-    {
-      label: 'Assessments',
-      path: '/assessments',
-      icon: 'FileCheck',
-      order: 1,
-      roles: ['admin', 'manager', 'analyst'],
-    },
-    {
-      label: 'Dashboards',
-      path: '/dashboards',
-      icon: 'BarChart3',
-      order: 2,
-    },
+    { label: 'Dashboard', path: '/dashboard', icon: 'LayoutDashboard', order: 10 },
+    { label: 'Assessments', path: '/assessment', icon: 'ClipboardCheck', order: 20 },
   ],
 
-  // Dashboard widgets
-  widgets: [
-    {
-      id: 'governance-score',
-      name: 'Governance Score',
-      description: 'Overall governance score widget',
-      component: lazy(() => import('./widgets/GovernanceScoreWidget')),
-      defaultSize: { w: 2, h: 2, minW: 2, minH: 2 },
-      category: 'metrics',
-      icon: 'TrendingUp',
-    },
-    {
-      id: 'gap-analysis',
-      name: 'Gap Analysis',
-      description: 'Compliance gaps visualization',
-      component: lazy(() => import('./widgets/GapAnalysisWidget')),
-      defaultSize: { w: 3, h: 2, minW: 2, minH: 2 },
-      category: 'analytics',
-      icon: 'AlertTriangle',
-    },
-    {
-      id: 'framework-coverage',
-      name: 'Framework Coverage',
-      description: 'Framework compliance coverage',
-      component: lazy(() => import('./widgets/FrameworkCoverageWidget')),
-      defaultSize: { w: 2, h: 2, minW: 2, minH: 2 },
-      category: 'compliance',
-      icon: 'Shield',
-    },
-    {
-      id: 'domain-comparison',
-      name: 'Domain Comparison',
-      description: 'Compare scores across domains',
-      component: lazy(() => import('./widgets/DomainComparisonWidget')),
-      defaultSize: { w: 3, h: 2, minW: 2, minH: 2 },
-      category: 'analytics',
-      icon: 'BarChart',
-    },
-  ],
-
-  // Module configuration
-  config: {
-    enabled: true,
-    settings: {
-      enableAutoSave: true,
-      autoSaveInterval: 30000, // 30 seconds
-      enableGapAnalysis: true,
-      enableMultiDomain: true,
-    },
-  },
-
-  // Lifecycle hooks
+  // 5. Lifecycle Hooks
   onActivate: async () => {
-    console.log('🚀 Governance module activated');
-
-    // Initialize module-specific state
-    // Load cached data
-    // Setup listeners
+    console.log('Governance Module Activated.');
+    // Potential logic: pre-fetch assessment data, initialize state stores
   },
-
   onDeactivate: async () => {
-    console.log('👋 Governance module deactivated');
-
-    // Cleanup
-    // Save state
-    // Remove listeners
-  },
-
-  onConfigure: async (config) => {
-    console.log('⚙️ Governance module configured:', config);
-
-    // Apply configuration
-    // Update settings
-  },
-
-  // Services exposed by this module
-  services: {
-    assessments: {
-      async getById(id: string) {
-        // Implementation
-        console.log(`Getting assessment ${id}`);
-        return null;
-      },
-
-      async create(data: any) {
-        // Implementation
-        console.log('Creating assessment', data);
-        return null;
-      },
-
-      async update(id: string, data: any) {
-        // Implementation
-        console.log(`Updating assessment ${id}`, data);
-        return null;
-      },
-
-      async delete(id: string) {
-        // Implementation
-        console.log(`Deleting assessment ${id}`);
-        return null;
-      },
-    },
-
-    scoring: {
-      async calculate(answers: any[]) {
-        // Scoring engine implementation
-        const total = answers.reduce((sum, a) => sum + (a.value || 0), 0);
-        const max = answers.length * 100;
-        return (total / max) * 100;
-      },
-    },
-  },
-
-  // Event handlers
-  eventHandlers: {
-    'governance:assessment-completed': async (event) => {
-      console.log('Assessment completed:', event.data);
-
-      // Could trigger:
-      // - Send notification
-      // - Generate report
-      // - Update dashboard
-      // - Emit event for other modules
-    },
-
-    'governance:gap-detected': async (event) => {
-      console.log('Gap detected:', event.data);
-
-      // Could trigger:
-      // - Create remediation task
-      // - Send alert
-      // - Update risk register (if risk management module is loaded)
-    },
+    console.log('Governance Module Deactivated.');
+    // Potential logic: clean up state, cancel subscriptions
   },
 };
 

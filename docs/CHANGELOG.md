@@ -11,6 +11,56 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ### Adicionado
 
+- **Modular Architecture** (ADR-0024): Arquitetura modular para expansão do sistema
+  - `ModuleLoader`: Sistema de carregamento dinâmico de módulos
+  - `EventBus`: Barramento de eventos para comunicação inter-módulos
+  - `ServiceRegistry`: Registro central de serviços compartilhados
+  - `GovernanceModule`: Módulo de governança com manifest, rotas e navegação
+  - Lazy loading para performance otimizada
+  - Lifecycle hooks (onActivate, onDeactivate)
+- **Reports Page** (ADR-0026): Página completa de relatórios
+  - Quick Reports para geração rápida (Executive Summary, Compliance Status, Gap Analysis)
+  - Custom Report Builder com filtros configuráveis
+  - Scheduled Reports com cronograma e destinatários
+  - Report History com download de relatórios anteriores
+  - Report Templates para reutilização de configurações
+- **Theme System** (ADR-0027): Sistema de temas avançado
+  - ThemeProvider com contexto React
+  - 5+ temas pré-definidos (default, dark, highContrast, corporate, sunset, forest)
+  - Customização de cores, tipografia e espaçamento
+  - Persistência em localStorage
+  - Suporte a preferências do sistema (prefers-color-scheme)
+- **Animation System** (ADR-0027): Biblioteca de animações com Framer Motion
+  - Variants: fadeIn, scaleIn, slideIn, stagger
+  - Hooks: useScrollAnimation, useStaggerAnimation, useCountAnimation
+  - Components: FadeIn, ScrollReveal, StaggerList, LoadingDots, CountUp
+  - Suporte a prefers-reduced-motion
+- **Draggable AI Assistant** (ADR-0027): Assistente IA com posicionamento livre
+  - Drag & drop com snap nas bordas
+  - Resize (mouse e touch)
+  - Persistência de posição/tamanho
+  - Keyboard shortcut (Ctrl+Shift+A)
+  - States: minimized, expanded, pinned
+- **User Avatars** (ADR-0027): Sistema de avatares de usuário
+  - Upload com resize e compressão automática
+  - Fallbacks: Gravatar, DiceBear, UI Avatars
+  - Armazenamento em Supabase Storage com RLS
+  - Validação de tipo e tamanho (max 1MB)
+- **Email Service**: Serviço de envio de emails multi-provider
+  - Suporte a Resend, SendGrid, Mailgun, SMTP
+  - Fallback automático entre providers
+  - Templates para relatórios, alertas de anomalia
+  - Tracking de opens/clicks
+- **Multi-Profile Documentation** (ADR-0025): Documentação por perfil de usuário
+  - Estrutura: admin/, developer/, qa/, user/, auditor/
+  - Documentação em PT-BR (EN-US e ES-ES em progresso)
+  - Guias específicos por perfil
+- **Application Router**: Sistema de rotas modular
+  - Integração com ModuleLoader para rotas dinâmicas
+  - Layout autenticado com MainLayout
+  - Lazy loading para todas as páginas
+  - Rotas públicas: /login, /forgot-password, /reset-password
+  - Rotas protegidas: /dashboard, /assessment, /reports, /settings, /admin
 - **OpenTelemetry Dependencies**: Pacotes completos para instrumentação frontend (Phase 6)
   - @opentelemetry/api, @opentelemetry/sdk-trace-web, @opentelemetry/sdk-metrics
   - Exporters OTLP HTTP para traces e métricas
