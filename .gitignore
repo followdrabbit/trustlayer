@@ -1,43 +1,228 @@
+# =============================================================================
+# TrustLayer - .gitignore
+# =============================================================================
+
+# =============================================================================
+# Dependencies
+# =============================================================================
+node_modules/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+npm-cache/
+.npm/
+
+# =============================================================================
+# Build & Output
+# =============================================================================
+dist/
+dist-ssr/
+build/
+out/
+.vite/
+.turbo/
+.esbuild/
+.swc/
+.tsc-output/
+*.tsbuildinfo
+
+# =============================================================================
 # Logs
-logs
+# =============================================================================
+logs/
 *.log
+*.log.*
+*.log.gz
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+debug.log
+error.log
 
-node_modules
-dist
-dist-ssr
-
-# Environment files (keep examples)
+# =============================================================================
+# Environment Files
+# =============================================================================
+# Keep example files for reference
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.*.local
 !.env.example
 !.env.local.example
 
-# Editor directories and files
+# =============================================================================
+# Editor & IDE
+# =============================================================================
+# VS Code
 .vscode/*
 !.vscode/extensions.json
 !.vscode/settings.json
 !.vscode/launch.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+!.vscode/tasks.json
+.vscode/.history/
+.vscode/*.code-workspace
 
-# Local development
+# JetBrains (IntelliJ, WebStorm, PyCharm)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim/Neovim
+*.sw?
+*.swp
+*.swo
+*~
+.nvimrc.local
+
+# Emacs
+*~
+*.elc
+.#*
+\#*\#
+
+# =============================================================================
+# OS Generated Files
+# =============================================================================
+# macOS
+.DS_Store
+.DS_Store?
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+
+# =============================================================================
+# Testing & Coverage
+# =============================================================================
+coverage/
+.nyc_output/
+.jest/
+.vitest/
+htmlcov/
+lcov.info
+*.lcov
+test-results/
+junit.xml
+test-report.xml
+
+# =============================================================================
+# Tooling Caches
+# =============================================================================
+.eslintcache
+.stylelintcache
+.prettiercache
+.cache/
+*.cache
+
+# =============================================================================
+# Local Development
+# =============================================================================
 uploads/
 backups/
 *.sql.gz
+*.dump
+tmp/
+temp/
+*.tmp
+*.bak
+*.orig
+*.backup
 
-# Coverage
-coverage/
-
-# Docker volumes (if stored locally)
+# =============================================================================
+# Docker
+# =============================================================================
 .docker/
+docker-volumes/
+.docker-sync/
+docker/ssl/*.pem
+docker/ssl/*.key
+docker/ssl/*.crt
+!docker/ssl/.gitkeep
+
+# =============================================================================
+# Supabase
+# =============================================================================
+supabase/.temp/
+supabase/.branches/
+supabase/functions/.cache/
+supabase/.env.local
+supabase/.env.*.local
+
+# =============================================================================
+# Kubernetes & Helm
+# =============================================================================
+helm/values-local.yaml
+helm/values-secrets.yaml
+helm/Chart.lock
+helm/*.tgz
+kubeconfig
+.kube/
+
+# =============================================================================
+# CI/CD Artifacts
+# =============================================================================
+ci-artifacts/
+build-artifacts/
+.github/workflows/logs/
+.github/artifacts/
+codecov-reports/
+
+# =============================================================================
+# Security & Secrets
+# =============================================================================
+*.pem
+*.key
+*.p12
+*.pfx
+!*.example.pem
+!*.example.key
+secrets/
+.secrets/
+credentials.json
+service-account.json
+.aws/
+.gcp/
+.azure/
+
+# =============================================================================
+# Generated Files
+# =============================================================================
+*.generated.ts
+*.generated.tsx
+*.generated.js
+generated/
+
+# =============================================================================
+# Misc
+# =============================================================================
+.turbo
+.vercel
+.netlify
+.output
+.nuxt
+.next
+*.local
